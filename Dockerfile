@@ -35,7 +35,7 @@ COPY --from=frontend-builder /frontend/dist/ ./frontend/dist/
 RUN mkdir -p uploads exports backend/fonts temp_sessions
 
 # Expose Web port
-EXPOSE 8000
+EXPOSE 10000
 
 # Start FastAPI Web Server with integrated Telegram Bot Worker
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
