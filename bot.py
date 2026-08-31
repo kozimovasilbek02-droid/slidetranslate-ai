@@ -48,7 +48,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Token configuration
-BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8899026470:AAFa4WG85YKIEw0q2LPKirDeKrPWdC7kpqE").strip()
+BOT_TOKEN = (os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("BOT_TOKEN", "")).strip()
 
 USER_DATA_FILE = os.path.join(os.path.dirname(__file__), "user_settings.json")
 
