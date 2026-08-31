@@ -1,6 +1,13 @@
-# Base Python Image
-FROM python:3.11-slim
+# Stage 1: Build React Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
+# Stage 2: Python Backend & Telegram Bot Worker
+FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies & font utilities
@@ -16,16 +23,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend and frontend files
+# Copy backend, bot and config
 COPY backend/ ./backend/
-COPY frontend/dist/ ./frontend/dist/
 COPY bot.py .
 COPY start_app.py .
 
-# Create uploads, exports, fonts directories
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder /frontend/dist/ ./frontend/dist/
+
+# Create runtime directories
 RUN mkdir -p uploads exports backend/fonts temp_sessions
 
-# Expose FastAPI port
+# Expose Web port
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start both Telegram Bot and FastAPI Web Server concurrently in 1 container
+CMD ["sh", "-c", "python -u bot.py & uvicorn backend.main:app --host 0.0.0.0 --port 8000"]
