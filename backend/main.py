@@ -27,27 +27,44 @@ EXPORTS_DIR = os.path.join(BASE_DIR, "exports")
 async def health_check():
     return {"status": "ok", "service": "SlideTranslate AI", "uptime": "24/7 active"}
 
-async def bot_polling_worker():
+@app.post("/webhook")
+async def telegram_webhook(update: dict):
+    try:
+        from aiogram.types import Update as TgUpdate
+        from bot import dp, bot as telegram_bot
+        telegram_update = TgUpdate.model_validate(update, context={"bot": telegram_bot})
+        await dp.feed_update(telegram_bot, telegram_update)
+    except Exception as e:
+        print(f"Error handling webhook update: {e}")
+    return {"ok": True}
+
+async def bot_worker():
     await asyncio.sleep(2)
     try:
         from bot import dp, bot as telegram_bot
-        print("🤖 SlideTranslate Telegram Bot worker ishga tushmoqda...")
-        while True:
-            try:
-                await telegram_bot.delete_webhook(drop_pending_updates=True)
-                print("✅ SlideTranslate Telegram Bot polling faol!")
-                await dp.start_polling(telegram_bot)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                print(f"⚠️ Telegram botda xatolik: {e}, 5 soniyada qayta urinmoqda...")
-                await asyncio.sleep(5)
+        webhook_base = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("WEBHOOK_URL", "")
+        if webhook_base:
+            wh_url = f"{webhook_base.rstrip('/')}/webhook"
+            await telegram_bot.set_webhook(wh_url, drop_pending_updates=True)
+            print(f"🌐 SlideTranslate Webhook o'rnatildi: {wh_url}")
+        else:
+            print("🤖 SlideTranslate Telegram Bot polling rejimida ishlamoqda...")
+            while True:
+                try:
+                    await telegram_bot.delete_webhook(drop_pending_updates=True)
+                    print("✅ SlideTranslate Telegram Bot polling faol!")
+                    await dp.start_polling(telegram_bot)
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    print(f"⚠️ Telegram botda xatolik: {e}, 5 soniyada qayta urinmoqda...")
+                    await asyncio.sleep(5)
     except Exception as e:
-        print(f"Telegram botni import qilishda xatolik: {e}")
+        print(f"Telegram botni ishga tushirishda xatolik: {e}")
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(bot_polling_worker())
+    asyncio.create_task(bot_worker())
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
