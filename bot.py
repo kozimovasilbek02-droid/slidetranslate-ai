@@ -15,12 +15,14 @@ if sys.stderr.encoding != 'utf-8':
 """
 SlideTranslate AI — Telegram Bot
 Avtomatik PowerPoint (.pptx) tarjimon boti.
+Har bir foydalanuvchi o'zining Gemini API kalitini kiritadi.
 Aiogram 3 + Gemini 3.6 Flash + PPTXProcessor + FontManager.
 """
 
 import os
 import sys
 import re
+import json
 import uuid
 import asyncio
 import logging
@@ -48,18 +50,44 @@ logger = logging.getLogger(__name__)
 # Token configuration
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8899026470:AAFa4WG85YKIEw0q2LPKirDeKrPWdC7kpqE").strip()
 
-# In-memory user settings storage
-USER_SETTINGS: Dict[int, Dict[str, Any]] = {}
+USER_DATA_FILE = os.path.join(os.path.dirname(__file__), "user_settings.json")
+
+def load_user_settings_db() -> Dict[str, Any]:
+    if os.path.exists(USER_DATA_FILE):
+        try:
+            with open(USER_DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_user_settings_db(data: Dict[str, Any]):
+    try:
+        with open(USER_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Foydalanuvchi ma'lumotlarini saqlashda xatolik: {e}")
+
+USER_SETTINGS: Dict[str, Dict[str, Any]] = load_user_settings_db()
 
 def get_user_settings(user_id: int) -> Dict[str, Any]:
-    if user_id not in USER_SETTINGS:
-        USER_SETTINGS[user_id] = {
-            "target_script": "latin", # 'latin' or 'cyrillic'
+    uid = str(user_id)
+    if uid not in USER_SETTINGS:
+        USER_SETTINGS[uid] = {
+            "target_script": "latin",
             "domain": "IT & Dasturlash",
             "auto_fit": True,
             "api_key": None
         }
-    return USER_SETTINGS[user_id]
+        save_user_settings_db(USER_SETTINGS)
+    return USER_SETTINGS[uid]
+
+def set_user_api_key(user_id: int, key: str):
+    uid = str(user_id)
+    st = get_user_settings(user_id)
+    st["api_key"] = key.strip()
+    USER_SETTINGS[uid] = st
+    save_user_settings_db(USER_SETTINGS)
 
 # Keyboard Builders
 def get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
@@ -67,8 +95,13 @@ def get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
     script_label = "🔤 Yozuv: Lotin" if st["target_script"] == "latin" else "🔤 Ёзув: Кирилл"
     domain_label = f"🏢 Soha: {st['domain']}"
     autofit_label = "⚡ Auto-fit: Yoqilgan" if st["auto_fit"] else "⚡ Auto-fit: O'chirilgan"
+    has_key = bool(st.get("api_key"))
+    key_label = "🔑 Gemini Kalit: ✅ Faol" if has_key else "🔑 Gemini Kalit: ❌ Kiritilmagan"
 
     kb = [
+        [
+            InlineKeyboardButton(text=key_label, callback_data="setup_key")
+        ],
         [
             InlineKeyboardButton(text=script_label, callback_data="toggle_script"),
             InlineKeyboardButton(text=autofit_label, callback_data="toggle_autofit")
@@ -77,7 +110,7 @@ def get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=domain_label, callback_data="change_domain")
         ],
         [
-            InlineKeyboardButton(text="🔤 Shriftlar bazasi (130+)", callback_data="show_fonts"),
+            InlineKeyboardButton(text="🔤 Shriftlar (130+)", callback_data="show_fonts"),
             InlineKeyboardButton(text="ℹ️ Bot haqida", callback_data="show_info")
         ]
     ]
@@ -99,21 +132,68 @@ def get_domain_keyboard() -> InlineKeyboardMarkup:
     kb.append([InlineKeyboardButton(text="◀️ Orqaga", callback_data="back_to_main")])
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-# Initialize Dispatcher
 dp = Dispatcher()
 
 @dp.message(CommandStart())
 async def cmd_start(msg: Message):
     user_id = msg.from_user.id
     settings = get_user_settings(user_id)
+    has_key = bool(settings.get("api_key"))
+
+    key_status_text = (
+        "✅ <i>Gemini API kalitingiz sozlangan! Istalgan .pptx fayl yuborishingiz mumkin.</i>"
+        if has_key else
+        "⚠️ <b>Diqqat:</b> Tarjimadan foydalanish uchun <b>Gemini API kalitingizni</b> kiritishingiz kerak.\n"
+        "🔗 <b>Bepul kalit olish (1 daqiqa):</b> <a href='https://aistudio.google.com/app/apikey'>Google AI Studio</a>\n"
+        "Kalitni shu yerga yuboring (masalan: <code>AIzaSy...</code>) yoki /key buyrug'idan foydalaning."
+    )
+
     welcome_text = (
         f"👋 <b>Assalomu alaykum, {msg.from_user.first_name}!</b>\n\n"
         f"🚀 <b>SlideTranslate AI Botiga xush kelibsiz!</b>\n"
         f"Men PowerPoint (<b>.pptx</b>) taqdimotlaringizni dizayni, shakllari, jadvallari va "
         f"<b>130+ shriftlarini</b> buzmagan holda O'zbek tiliga professional tarjima qilib beraman.\n\n"
-        f"📁 <b>Ishni boshlash uchun menga istalgan .pptx fayl yuboring!</b>"
+        f"{key_status_text}\n\n"
+        f"📁 <b>Taqdimotni tarjima qilish uchun menga .pptx fayl yuboring!</b>"
     )
-    await msg.answer(welcome_text, parse_mode="HTML", reply_markup=get_main_keyboard(user_id))
+    await msg.answer(welcome_text, parse_mode="HTML", reply_markup=get_main_keyboard(user_id), disable_web_page_preview=True)
+
+@dp.message(Command("key"))
+async def cmd_set_key(msg: Message):
+    parts = msg.text.split(maxsplit=1)
+    if len(parts) > 1:
+        new_key = parts[1].strip()
+        set_user_api_key(msg.from_user.id, new_key)
+        await msg.reply(
+            "✅ <b>Gemini API kalitingiz muvaffaqiyatli saqlandi!</b>\n"
+            "Endi bemalol .pptx taqdimot fayllaringizni tarjima qilish uchun yuborishingiz mumkin.",
+            parse_mode="HTML"
+        )
+    else:
+        await msg.reply(
+            "🔑 <b>Gemini API kalitini kiritish:</b>\n\n"
+            "Kalitni quyidagi formatda yuboring:\n"
+            "<code>/key AIzaSySizningKalitingiz...</code>\n\n"
+            "🔗 Bepul kalit olish: <a href='https://aistudio.google.com/app/apikey'>Google AI Studio</a>",
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+
+@dp.message(Command("mykey"))
+async def cmd_my_key(msg: Message):
+    st = get_user_settings(msg.from_user.id)
+    key = st.get("api_key")
+    if key:
+        masked = key[:6] + "..." + key[-4:]
+        await msg.reply(f"🔑 Sizning faol API kalitingiz: <code>{masked}</code>", parse_mode="HTML")
+    else:
+        await msg.reply(
+            "❌ Siz hali API kalit kiritmadingiz.\n"
+            "Kalit olish uchun: <a href='https://aistudio.google.com/app/apikey'>Google AI Studio</a>\n"
+            "Kiritish: <code>/key AIzaSy...</code>",
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
 
 @dp.message(Command("settings"))
 async def cmd_settings(msg: Message):
@@ -135,23 +215,63 @@ async def cmd_fonts(msg: Message):
 async def cmd_help(msg: Message):
     help_text = (
         "📖 <b>Botdan foydalanish bo'yicha qo'llanma:</b>\n\n"
-        "1. Menga <b>.pptx</b> formatidagi taqdimot faylini yuboring.\n"
-        "2. Bot barcha slaydlarni tahlil qiladi va Gemini 3.6 Flash yordamida tarjima qiladi.\n"
-        "3. Tayyor bo'lgan faylni yuklab oling!\n\n"
+        "1. <b>Gemini API kalitini kiriting:</b>\n"
+        "   • <a href='https://aistudio.google.com/app/apikey'>Google AI Studio</a> saytidan bepul kalit oling.\n"
+        "   • Botga kalitni yuboring yoki <code>/key AIzaSy...</code> deb yozing.\n\n"
+        "2. Menga <b>.pptx</b> formatidagi taqdimot faylini yuboring.\n"
+        "3. Bot barcha slaydlarni tahlil qiladi va Gemini 3.6 Flash yordamida tarjima qiladi.\n"
+        "4. Tayyor bo'lgan faylni yuklab oling!\n\n"
         "⚡ <b>Xususiyatlar:</b>\n"
         "• 100% Dizayn va ranglar saqlanadi\n"
         "• Reklama va Slide Master logotiplari tozalanadi\n"
         "• So'zlar qutilardan toshib ketmaydi (Anti-overflow)\n"
         "• Lotin va Kirill yozuvlarini qo'llab-quvvatlaydi"
     )
-    await msg.answer(help_text, parse_mode="HTML")
+    await msg.answer(help_text, parse_mode="HTML", disable_web_page_preview=True)
+
+# Direct Text Message (Check if user pasted Gemini API key)
+@dp.message(F.text & ~F.text.startswith("/"))
+async def handle_text_key_input(msg: Message):
+    text = msg.text.strip()
+    if text.startswith("AIzaSy") and len(text) >= 30:
+        set_user_api_key(msg.from_user.id, text)
+        await msg.reply(
+            "🎉 <b>Google Gemini API kalitingiz muvaffaqiyatli saqlandi!</b>\n\n"
+            "Endi botdan cheklovlarsiz foydalanishingiz mumkin. Menga istalgan <b>.pptx</b> taqdimot faylini yuboring!",
+            parse_mode="HTML",
+            reply_markup=get_main_keyboard(msg.from_user.id)
+        )
+    else:
+        await msg.reply(
+            "💡 Taqdimotni tarjima qilish uchun menga <b>.pptx</b> fayl yuboring.\n\n"
+            "Agar API kalit kiritmoqchi bo'lsangiz, uni to'g'ridan-to'g'ri yuboring (kalit <code>AIzaSy...</code> bilan boshlanadi).",
+            parse_mode="HTML"
+        )
 
 # Callbacks
+@dp.callback_query(F.data == "setup_key")
+async def cb_setup_key(cb: CallbackQuery):
+    user_id = cb.from_user.id
+    st = get_user_settings(user_id)
+    has_key = bool(st.get("api_key"))
+    
+    text = (
+        f"🔑 <b>Gemini API Kaliti Holati:</b> {'✅ Faol' if has_key else '❌ Kiritilmagan'}\n\n"
+        f"Google Gemini API kaliti <b>100% bepul</b> (har oy cheksiz foydalanish mumkin).\n\n"
+        f"1. <a href='https://aistudio.google.com/app/apikey'>Google AI Studio</a> saytiga kiring.\n"
+        f"2. <b>Create API key</b> tugmasini bosing va kalitdan nusxa oling.\n"
+        f"3. Kalitni ushbu chatga xabar qilib yuboring.\n\n"
+        f"<i>Yoki <code>/key AIzaSy...</code> buyrug'i orqali kiriting.</i>"
+    )
+    await cb.message.answer(text, parse_mode="HTML", disable_web_page_preview=True)
+    await cb.answer()
+
 @dp.callback_query(F.data == "toggle_script")
 async def cb_toggle_script(cb: CallbackQuery):
     user_id = cb.from_user.id
     st = get_user_settings(user_id)
     st["target_script"] = "cyrillic" if st["target_script"] == "latin" else "latin"
+    save_user_settings_db(USER_SETTINGS)
     await cb.message.edit_reply_markup(reply_markup=get_main_keyboard(user_id))
     await cb.answer(f"Yozuv o'zgartirildi: {'Kirill' if st['target_script'] == 'cyrillic' else 'Lotin'}")
 
@@ -160,6 +280,7 @@ async def cb_toggle_autofit(cb: CallbackQuery):
     user_id = cb.from_user.id
     st = get_user_settings(user_id)
     st["auto_fit"] = not st["auto_fit"]
+    save_user_settings_db(USER_SETTINGS)
     await cb.message.edit_reply_markup(reply_markup=get_main_keyboard(user_id))
     await cb.answer(f"Auto-fit: {'Yoqildi' if st['auto_fit'] else 'O\'chirildi'}")
 
@@ -181,6 +302,7 @@ async def cb_select_domain(cb: CallbackQuery):
         "dom_gen": "Umumiy soha"
     }
     st["domain"] = dom_map.get(cb.data, "Umumiy soha")
+    save_user_settings_db(USER_SETTINGS)
     await cb.message.edit_text("⚙️ <b>Bot Sozlamalari:</b>", parse_mode="HTML", reply_markup=get_main_keyboard(user_id))
     await cb.answer(f"Soha tanlandi: {st['domain']}")
 
@@ -200,7 +322,7 @@ async def cb_show_info(cb: CallbackQuery):
     info_text = (
         "🚀 <b>SlideTranslate AI</b> — PowerPoint taqdimotlarini AI yordamida "
         "dizaynini 100% saqlagan holda O'zbek tiliga o'girish tizimi.\n\n"
-        "Dasturchi: Google Antigravity AI Engine"
+        "Har bir foydalanuvchi o'zining bepul Gemini API kalitidan foydalanadi."
     )
     await cb.message.answer(info_text, parse_mode="HTML")
     await cb.answer()
@@ -217,6 +339,19 @@ async def handle_presentation_document(msg: Message, bot: Bot):
 
     user_id = msg.from_user.id
     st = get_user_settings(user_id)
+    user_key = st.get("api_key")
+
+    if not user_key:
+        await msg.reply(
+            "⚠️ <b>Tarjima qilish uchun avval Gemini API kalitingizni kiriting!</b>\n\n"
+            "Google Gemini API mutlaqo <b>bepul</b> va 1 daqiqada olinadi:\n"
+            "👉 <b>Havola:</b> <a href='https://aistudio.google.com/app/apikey'>Google AI Studio dan kalit olish</a>\n\n"
+            "Kalitni olgach, uni ushbu chatga xabar qilib yuboring (masalan: <code>AIzaSy...</code>).",
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+        return
+
     target_script = st["target_script"]
     domain = st["domain"]
     auto_fit = st["auto_fit"]
@@ -250,12 +385,12 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             f"• Matn bloklari: <b>{total_items} ta</b>\n"
             f"• Soha: <b>{domain}</b>\n"
             f"• Yozuv: <b>{'Lotin' if target_script == 'latin' else 'Кирилл'}</b>\n\n"
-            f"⚡ <b>Gemini 3.6 Flash orqali tarjima qilinmoqda...</b>",
+            f"⚡ <b>Sizning Gemini kalitingiz orqali tarjima qilinmoqda...</b>",
             parse_mode="HTML"
         )
 
-        # 3. Translate with Gemini Translator
-        translator = GeminiTranslator(api_key=st["api_key"])
+        # 3. Translate with Gemini Translator using user's personal key
+        translator = GeminiTranslator(api_key=user_key)
         all_items = [it for s in data["slides"] for it in s.get("items", [])]
         
         batch_size = 75
@@ -300,7 +435,7 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             f"• Matn bloklari: <b>{total_items} ta</b>\n"
             f"• Yozuv: <b>{'Lotin' if target_script == 'latin' else 'Кирилл'}</b>\n"
             f"• Shriftlar va dizayn: <b>100% Saqlangan</b>\n\n"
-            f"<i>SlideTranslate AI — Gemini 3.6 Flash</i>"
+            f"<i>SlideTranslate AI</i>"
         )
 
         input_file = FSInputFile(path=out_path, filename=out_filename)
@@ -313,24 +448,10 @@ async def handle_presentation_document(msg: Message, bot: Bot):
 
 async def run_bot():
     global BOT_TOKEN
-    if not BOT_TOKEN:
-        print("=" * 65)
-        print("  ⚠️ TELEGRAM_BOT_TOKEN o'rnatilmagan!")
-        print("  Iltimos, Telegram Bot tokeningizni kiriting (@BotFather dan olingan):")
-        print("=" * 65)
-        try:
-            BOT_TOKEN = input("Bot Token: ").strip()
-        except EOFError:
-            BOT_TOKEN = ""
-
-    if not BOT_TOKEN:
-        print("Xatolik: Bot Token kiritilmadi. Bot to'xtatildi.")
-        return
-
     bot = Bot(token=BOT_TOKEN)
     print("=" * 65)
     print("      🤖 SlideTranslate AI — Telegram Boti Ishga Tushdi!")
-    print("      Foydalanuvchilar buyruqlari va PPTX fayllari kutilmoqda...")
+    print("      Har bir foydalanuvchi o'zining Gemini kalitidan foydalanadi.")
     print("=" * 65)
     await dp.start_polling(bot)
 
