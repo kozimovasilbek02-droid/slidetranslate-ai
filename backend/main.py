@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-import os, uuid, re, urllib.parse
+import os, uuid, re, urllib.parse, asyncio
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +22,32 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exports")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "SlideTranslate AI", "uptime": "24/7 active"}
+
+async def bot_polling_worker():
+    await asyncio.sleep(2)
+    try:
+        from bot import dp, bot as telegram_bot
+        print("🤖 SlideTranslate Telegram Bot worker ishga tushmoqda...")
+        while True:
+            try:
+                await telegram_bot.delete_webhook(drop_pending_updates=True)
+                print("✅ SlideTranslate Telegram Bot polling faol!")
+                await dp.start_polling(telegram_bot)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"⚠️ Telegram botda xatolik: {e}, 5 soniyada qayta urinmoqda...")
+                await asyncio.sleep(5)
+    except Exception as e:
+        print(f"Telegram botni import qilishda xatolik: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(bot_polling_worker())
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
