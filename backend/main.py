@@ -42,23 +42,17 @@ async def bot_worker():
     await asyncio.sleep(2)
     try:
         from bot import dp, bot as telegram_bot
-        webhook_base = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("WEBHOOK_URL", "")
-        if webhook_base:
-            wh_url = f"{webhook_base.rstrip('/')}/webhook"
-            await telegram_bot.set_webhook(wh_url, drop_pending_updates=True)
-            print(f"🌐 SlideTranslate Webhook o'rnatildi: {wh_url}")
-        else:
-            print("🤖 SlideTranslate Telegram Bot polling rejimida ishlamoqda...")
-            while True:
-                try:
-                    await telegram_bot.delete_webhook(drop_pending_updates=True)
-                    print("✅ SlideTranslate Telegram Bot polling faol!")
-                    await dp.start_polling(telegram_bot)
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    print(f"⚠️ Telegram botda xatolik: {e}, 5 soniyada qayta urinmoqda...")
-                    await asyncio.sleep(5)
+        print("🤖 SlideTranslate Telegram Bot 24/7 doimiy polling rejimida ishlamoqda...")
+        while True:
+            try:
+                await telegram_bot.delete_webhook(drop_pending_updates=False)
+                print("✅ SlideTranslate Telegram Bot polling faol!")
+                await dp.start_polling(telegram_bot)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"⚠️ Telegram botda xatolik: {e}, 5 soniyada qayta urinmoqda...")
+                await asyncio.sleep(5)
     except Exception as e:
         print(f"Telegram botni ishga tushirishda xatolik: {e}")
 

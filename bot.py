@@ -48,7 +48,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Token configuration
-BOT_TOKEN = (os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("BOT_TOKEN", "")).strip()
+BOT_TOKEN = (os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("BOT_TOKEN") or "8899026470:AAGgBTv8qxdSUG1COkLxJuZdhICW0MZolxQ").strip()
+bot = Bot(token=BOT_TOKEN)
 
 USER_DATA_FILE = os.path.join(os.path.dirname(__file__), "user_settings.json")
 
@@ -447,8 +448,7 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
 
 async def run_bot():
-    global BOT_TOKEN
-    bot = Bot(token=BOT_TOKEN)
+    await bot.delete_webhook(drop_pending_updates=False)
     print("=" * 65)
     print("      🤖 SlideTranslate AI — Telegram Boti Ishga Tushdi!")
     print("      Har bir foydalanuvchi o'zining Gemini kalitidan foydalanadi.")
