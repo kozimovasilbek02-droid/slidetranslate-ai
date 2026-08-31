@@ -1,0 +1,874 @@
+{
+  "calibri": {
+    "name": "Calibri",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "arial": {
+    "name": "Arial",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "times new roman": {
+    "name": "Times New Roman",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "segoe ui": {
+    "name": "Segoe UI",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "aptos": {
+    "name": "Aptos",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "tahoma": {
+    "name": "Tahoma",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "verdana": {
+    "name": "Verdana",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "georgia": {
+    "name": "Georgia",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "trebuchet ms": {
+    "name": "Trebuchet MS",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "impact": {
+    "name": "Impact",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "comic sans ms": {
+    "name": "Comic Sans MS",
+    "type": "system",
+    "file": null,
+    "category": "sans-serif"
+  },
+  "consolas": {
+    "name": "Consolas",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "courier new": {
+    "name": "Courier New",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "microsoft yahei": {
+    "name": "Microsoft YaHei",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "simsun": {
+    "name": "SimSun",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "simhei": {
+    "name": "SimHei",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "kaiti": {
+    "name": "KaiTi",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "fangsong": {
+    "name": "FangSong",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "malgun gothic": {
+    "name": "Malgun Gothic",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "meiryo": {
+    "name": "Meiryo",
+    "type": "system",
+    "file": null,
+    "category": "serif"
+  },
+  "poppins": {
+    "name": "Poppins",
+    "type": "custom",
+    "file": "Poppins.ttf",
+    "url": "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfed3FHGPc.ttf",
+    "size_kb": 15.77
+  },
+  "montserrat": {
+    "name": "Montserrat",
+    "type": "custom",
+    "file": "Montserrat.ttf",
+    "url": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aX9-obK4.ttf",
+    "size_kb": 42.92
+  },
+  "nunito": {
+    "name": "Nunito",
+    "type": "custom",
+    "file": "Nunito.ttf",
+    "url": "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshdTQ3iqzdXWg.ttf",
+    "size_kb": 38.13
+  },
+  "rubik": {
+    "name": "Rubik",
+    "type": "custom",
+    "file": "Rubik.ttf",
+    "url": "https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFV0UwdYXFkQ.ttf",
+    "size_kb": 46.36
+  },
+  "lato": {
+    "name": "Lato",
+    "type": "custom",
+    "file": "Lato.ttf",
+    "url": "https://fonts.gstatic.com/s/lato/v25/S6uyw4BMUTPHjx4wWyWtFCc.ttf",
+    "size_kb": 27.58
+  },
+  "inter": {
+    "name": "Inter",
+    "type": "custom",
+    "file": "Inter.ttf",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjZ-Ck-8.ttf",
+    "size_kb": 65.01
+  },
+  "oswald": {
+    "name": "Oswald",
+    "type": "custom",
+    "file": "Oswald.ttf",
+    "url": "https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvsUZiYCSShiA.ttf",
+    "size_kb": 26.04
+  },
+  "raleway": {
+    "name": "Raleway",
+    "type": "custom",
+    "file": "Raleway.ttf",
+    "url": "https://fonts.gstatic.com/s/raleway/v37/1Ptxg8zYS_SKggPN4iEgvnHyvveLxVvaorCIPrQVJz9d.ttf",
+    "size_kb": 38.76
+  },
+  "open sans": {
+    "name": "Open Sans",
+    "type": "custom",
+    "file": "Open_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVcUx6EQ.ttf",
+    "size_kb": 24.81
+  },
+  "roboto": {
+    "name": "Roboto",
+    "type": "custom",
+    "file": "Roboto.ttf",
+    "url": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbVmUiA_0lFQm.ttf",
+    "size_kb": 32.94
+  },
+  "ubuntu": {
+    "name": "Ubuntu",
+    "type": "custom",
+    "file": "Ubuntu.ttf",
+    "url": "https://fonts.gstatic.com/s/ubuntu/v21/4iCs6KVjbNBYlgoKfw7znU6AFw.ttf",
+    "size_kb": 38.31
+  },
+  "work sans": {
+    "name": "Work Sans",
+    "type": "custom",
+    "file": "Work_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/worksans/v24/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXBi8Jo43fKyE.ttf",
+    "size_kb": 46.86
+  },
+  "quicksand": {
+    "name": "Quicksand",
+    "type": "custom",
+    "file": "Quicksand.ttf",
+    "url": "https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58a-xzw3UD0.ttf",
+    "size_kb": 33.36
+  },
+  "fira sans": {
+    "name": "Fira Sans",
+    "type": "custom",
+    "file": "Fira_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5Vvl4jOazX3dA.ttf",
+    "size_kb": 45.12
+  },
+  "dm sans": {
+    "name": "DM Sans",
+    "type": "custom",
+    "file": "DM_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxRSW3zRmAJpw.ttf",
+    "size_kb": 32.3
+  },
+  "plus jakarta sans": {
+    "name": "Plus Jakarta Sans",
+    "type": "custom",
+    "file": "Plus_Jakarta_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU79TR_QMquoRg.ttf",
+    "size_kb": 28.75
+  },
+  "outfit": {
+    "name": "Outfit",
+    "type": "custom",
+    "file": "Outfit.ttf",
+    "url": "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1O4a0FgIrq6c.ttf",
+    "size_kb": 32.06
+  },
+  "jost": {
+    "name": "Jost",
+    "type": "custom",
+    "file": "Jost.ttf",
+    "url": "https://fonts.gstatic.com/s/jost/v20/92zPtBhPNqw79Ij1E865zBUv7myjJTVBNI0umfHK.ttf",
+    "size_kb": 24.85
+  },
+  "arimo": {
+    "name": "Arimo",
+    "type": "custom",
+    "file": "Arimo.ttf",
+    "url": "https://fonts.gstatic.com/s/arimo/v36/P5sfzZCDf9_T_3cV7NCUECyoxNk37cxcABrEdwEoaQ.ttf",
+    "size_kb": 20.79
+  },
+  "cabin": {
+    "name": "Cabin",
+    "type": "custom",
+    "file": "Cabin.ttf",
+    "url": "https://fonts.gstatic.com/s/cabin/v35/u-4X0qWljRw-PfU81xCKCpdpbgZJl6XFpfEd7eA9BIxxkV2EH7alwkzoA_o.ttf",
+    "size_kb": 37.99
+  },
+  "heebo": {
+    "name": "Heebo",
+    "type": "custom",
+    "file": "Heebo.ttf",
+    "url": "https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSysdUmj7U6CXA.ttf",
+    "size_kb": 22.18
+  },
+  "mulish": {
+    "name": "Mulish",
+    "type": "custom",
+    "file": "Mulish.ttf",
+    "url": "https://fonts.gstatic.com/s/mulish/v18/1Ptyg83HX_SGhgqO0yLcmjzUAuWexZNR8aevHp49LTc.ttf",
+    "size_kb": 30.4
+  },
+  "titillium web": {
+    "name": "Titillium Web",
+    "type": "custom",
+    "file": "Titillium_Web.ttf",
+    "url": "https://fonts.gstatic.com/s/titilliumweb/v19/NaPecZTIAOhVxoMyOr9n_E7fdMPmCKZRbrw.ttf",
+    "size_kb": 29.3
+  },
+  "manrope": {
+    "name": "Manrope",
+    "type": "custom",
+    "file": "Manrope.ttf",
+    "url": "https://fonts.gstatic.com/s/manrope/v20/xn7_YHE41ni1AdIRqAuZuw1Bx9mbZk79FN_C-bzTe87A.ttf",
+    "size_kb": 34.87
+  },
+  "josefin sans": {
+    "name": "Josefin Sans",
+    "type": "custom",
+    "file": "Josefin_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/josefinsans/v34/Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQbMZhKibvUVw.ttf",
+    "size_kb": 26.97
+  },
+  "dosis": {
+    "name": "Dosis",
+    "type": "custom",
+    "file": "Dosis.ttf",
+    "url": "https://fonts.gstatic.com/s/dosis/v34/HhyJU5sn9vOmLxNkIwRSjTVNWLEJN7Ml2xMBbK0UPg.ttf",
+    "size_kb": 37.42
+  },
+  "questrial": {
+    "name": "Questrial",
+    "type": "custom",
+    "file": "Questrial.ttf",
+    "url": "https://fonts.gstatic.com/s/questrial/v19/QdVUSTchPBm7nuUeVf70viFguW44JQ.ttf",
+    "size_kb": 33.11
+  },
+  "exo 2": {
+    "name": "Exo 2",
+    "type": "custom",
+    "file": "Exo_2.ttf",
+    "url": "https://fonts.gstatic.com/s/exo2/v26/7cH1v4okm5zmbvwkAx_sfcEuiD8jvvKsOdC6jJjbpA.ttf",
+    "size_kb": 42.42
+  },
+  "catamaran": {
+    "name": "Catamaran",
+    "type": "custom",
+    "file": "Catamaran.ttf",
+    "url": "https://fonts.gstatic.com/s/catamaran/v28/o-0bIpQoyXQa2RxT7-5B6Ryxs2E_6n1iPHjd5a7dvnmhPy0.ttf",
+    "size_kb": 18.02
+  },
+  "overpass": {
+    "name": "Overpass",
+    "type": "custom",
+    "file": "Overpass.ttf",
+    "url": "https://fonts.gstatic.com/s/overpass/v19/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPbPpqPl8Suow.ttf",
+    "size_kb": 41.9
+  },
+  "archivo": {
+    "name": "Archivo",
+    "type": "custom",
+    "file": "Archivo.ttf",
+    "url": "https://fonts.gstatic.com/s/archivo/v25/k3k6o8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTNDNZ9xdsBUjiVA.ttf",
+    "size_kb": 39.54
+  },
+  "asap": {
+    "name": "Asap",
+    "type": "custom",
+    "file": "Asap.ttf",
+    "url": "https://fonts.gstatic.com/s/asap/v34/KFOOCniXp96a4Tc2DaTeuDAoKsE617JFc49knOIYdjTYkqUcKWmTgg3Wlg.ttf",
+    "size_kb": 36.13
+  },
+  "signika": {
+    "name": "Signika",
+    "type": "custom",
+    "file": "Signika.ttf",
+    "url": "https://fonts.gstatic.com/s/signika/v29/vEF72_JTCgwQ5ejvMV0Ox_Kg1UwJ0tKfX4zNpD8E4ASzH1r9gTuoyjkjoN0hjg.ttf",
+    "size_kb": 48.13
+  },
+  "karla": {
+    "name": "Karla",
+    "type": "custom",
+    "file": "Karla.ttf",
+    "url": "https://fonts.gstatic.com/s/karla/v33/qkBIXvYC6trAT55ZBi1ueQVIjQTD-JqaE0lPZbTXGg.ttf",
+    "size_kb": 26.18
+  },
+  "chivo": {
+    "name": "Chivo",
+    "type": "custom",
+    "file": "Chivo.ttf",
+    "url": "https://fonts.gstatic.com/s/chivo/v21/va9b4kzIxd1KFppkaRKvDRPJVDf_vB_ekGrWN3vAiA.ttf",
+    "size_kb": 34.58
+  },
+  "league spartan": {
+    "name": "League Spartan",
+    "type": "custom",
+    "file": "League_Spartan.ttf",
+    "url": "https://fonts.gstatic.com/s/leaguespartan/v15/kJEnBuEW6A0lliaV_m88ja5Twtx8BWhtkDVmjZvM_oTZA81YNAiMzQ.ttf",
+    "size_kb": 26.11
+  },
+  "lexend": {
+    "name": "Lexend",
+    "type": "custom",
+    "file": "Lexend.ttf",
+    "url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WCzsWzLdnf4CtCEs.ttf",
+    "size_kb": 31.58
+  },
+  "space grotesk": {
+    "name": "Space Grotesk",
+    "type": "custom",
+    "file": "Space_Grotesk.ttf",
+    "url": "https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUXskPMVBTyJL.ttf",
+    "size_kb": 31.19
+  },
+  "syne": {
+    "name": "Syne",
+    "type": "custom",
+    "file": "Syne.ttf",
+    "url": "https://fonts.gstatic.com/s/syne/v24/8vIS7w4qzmVxsWxjBZRjr0FKM_04uQ6jTYrvCk5Y.ttf",
+    "size_kb": 29.96
+  },
+  "urbanist": {
+    "name": "Urbanist",
+    "type": "custom",
+    "file": "Urbanist.ttf",
+    "url": "https://fonts.gstatic.com/s/urbanist/v18/L0xjDF02iFML4hGCyOCpRdycFsGxSrqDyx4vEZmvace1Kg.ttf",
+    "size_kb": 25.23
+  },
+  "playfair display": {
+    "name": "Playfair Display",
+    "type": "custom",
+    "file": "Playfair_Display.ttf",
+    "url": "https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtbK_l2q.ttf",
+    "size_kb": 52.36
+  },
+  "pt serif": {
+    "name": "PT Serif",
+    "type": "custom",
+    "file": "PT_Serif.ttf",
+    "url": "https://fonts.gstatic.com/s/ptserif/v19/EJRVQgYoZZY2vCFuvAFWzrq_dSb_.ttf",
+    "size_kb": 25.38
+  },
+  "pt sans": {
+    "name": "PT Sans",
+    "type": "custom",
+    "file": "PT_Sans.ttf",
+    "url": "https://fonts.gstatic.com/s/ptsans/v18/jizaRExUiTo99u79D0KEwMOPIDU.ttf",
+    "size_kb": 22.25
+  },
+  "merriweather": {
+    "name": "Merriweather",
+    "type": "custom",
+    "file": "Merriweather.ttf",
+    "url": "https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icaFF3wCPbaYA.ttf",
+    "size_kb": 127.03
+  },
+  "bitter": {
+    "name": "Bitter",
+    "type": "custom",
+    "file": "Bitter.ttf",
+    "url": "https://fonts.gstatic.com/s/bitter/v42/raxhHiqOu8IVPmnRc6SY1KXhnF_Y8fbfOLjOWHp1veQ.ttf",
+    "size_kb": 43.8
+  },
+  "lora": {
+    "name": "Lora",
+    "type": "custom",
+    "file": "Lora.ttf",
+    "url": "https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuxJBkqh8m9eY.ttf",
+    "size_kb": 46.26
+  },
+  "libre baskerville": {
+    "name": "Libre Baskerville",
+    "type": "custom",
+    "file": "Libre_Baskerville.ttf",
+    "url": "https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4iDgNKnODSfA.ttf",
+    "size_kb": 44.62
+  },
+  "cormorant garamond": {
+    "name": "Cormorant Garamond",
+    "type": "custom",
+    "file": "Cormorant_Garamond.ttf",
+    "url": "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86KnTOj9k7Ifo.ttf",
+    "size_kb": 74.83
+  },
+  "cinzel": {
+    "name": "Cinzel",
+    "type": "custom",
+    "file": "Cinzel.ttf",
+    "url": "https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-tbnfY3lCGxaZqQ.ttf",
+    "size_kb": 32.82
+  },
+  "domine": {
+    "name": "Domine",
+    "type": "custom",
+    "file": "Domine.ttf",
+    "url": "https://fonts.gstatic.com/s/domine/v25/L0xhDFMnlVwD4h3Lt9JWnbX3jG-2X3LAE1ofFpOtS8U.ttf",
+    "size_kb": 39.45
+  },
+  "prata": {
+    "name": "Prata",
+    "type": "custom",
+    "file": "Prata.ttf",
+    "url": "https://fonts.gstatic.com/s/prata/v22/6xKhdSpbNNCT-sWPCmvbLnwI.ttf",
+    "size_kb": 25.42
+  },
+  "bodoni moda": {
+    "name": "Bodoni Moda",
+    "type": "custom",
+    "file": "Bodoni_Moda.ttf",
+    "url": "https://fonts.gstatic.com/s/bodonimoda/v28/aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oU7a8Id4sXrPcwA.ttf",
+    "size_kb": 30.08
+  },
+  "spectral": {
+    "name": "Spectral",
+    "type": "custom",
+    "file": "Spectral.ttf",
+    "url": "https://fonts.gstatic.com/s/spectral/v15/rnCr-xNNww_2s0amA9M5kn3sS_ul.ttf",
+    "size_kb": 37.69
+  },
+  "cardo": {
+    "name": "Cardo",
+    "type": "custom",
+    "file": "Cardo.ttf",
+    "url": "https://fonts.gstatic.com/s/cardo/v21/wlp_gwjKBV1pqhv43IQ7225P.ttf",
+    "size_kb": 29.34
+  },
+  "faustina": {
+    "name": "Faustina",
+    "type": "custom",
+    "file": "Faustina.ttf",
+    "url": "https://fonts.gstatic.com/s/faustina/v23/XLY4IZPxYpJfTbZAFXWzNT2SO8wpWHlsgoEfHl-SWchLEw.ttf",
+    "size_kb": 30.83
+  },
+  "eb garamond": {
+    "name": "EB Garamond",
+    "type": "custom",
+    "file": "EB_Garamond.ttf",
+    "url": "https://fonts.gstatic.com/s/ebgaramond/v33/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RkBI96Wa-XgA.ttf",
+    "size_kb": 53.03
+  },
+  "vollkorn": {
+    "name": "Vollkorn",
+    "type": "custom",
+    "file": "Vollkorn.ttf",
+    "url": "https://fonts.gstatic.com/s/vollkorn/v30/0ybgGDoxxrvAnPhYGzMlQLzuMasz6Df2MHGeHmmZM7Pq3g.ttf",
+    "size_kb": 57.6
+  },
+  "alegreya": {
+    "name": "Alegreya",
+    "type": "custom",
+    "file": "Alegreya.ttf",
+    "url": "https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hU4-6qmkyKFrg.ttf",
+    "size_kb": 49.25
+  },
+  "marcellus": {
+    "name": "Marcellus",
+    "type": "custom",
+    "file": "Marcellus.ttf",
+    "url": "https://fonts.gstatic.com/s/marcellus/v14/wEO_EBrOk8hQLDvIAF81VvoP_kgXiQ.ttf",
+    "size_kb": 29.89
+  },
+  "cormorant": {
+    "name": "Cormorant",
+    "type": "custom",
+    "file": "Cormorant.ttf",
+    "url": "https://fonts.gstatic.com/s/cormorant/v24/H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTc7Nq6C-t0Yo.ttf",
+    "size_kb": 55.16
+  },
+  "bebas neue": {
+    "name": "Bebas Neue",
+    "type": "custom",
+    "file": "Bebas_Neue.ttf",
+    "url": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9WlhziTh89Y.ttf",
+    "size_kb": 21.11
+  },
+  "lobster": {
+    "name": "Lobster",
+    "type": "custom",
+    "file": "Lobster.ttf",
+    "url": "https://fonts.gstatic.com/s/lobster/v32/neILzCirqoswsqX9zoKmNoMwWJU.ttf",
+    "size_kb": 51.35
+  },
+  "anton": {
+    "name": "Anton",
+    "type": "custom",
+    "file": "Anton.ttf",
+    "url": "https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm3Kz-CoCSKlv.ttf",
+    "size_kb": 24.89
+  },
+  "pacifico": {
+    "name": "Pacifico",
+    "type": "custom",
+    "file": "Pacifico.ttf",
+    "url": "https://fonts.gstatic.com/s/pacifico/v23/FwZY7-Qmy14u9lezJ-6H6MyBp0u-.ttf",
+    "size_kb": 52.06
+  },
+  "dancing script": {
+    "name": "Dancing Script",
+    "type": "custom",
+    "file": "Dancing_Script.ttf",
+    "url": "https://fonts.gstatic.com/s/dancingscript/v29/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup5hNP6pg.ttf",
+    "size_kb": 50.74
+  },
+  "caveat": {
+    "name": "Caveat",
+    "type": "custom",
+    "file": "Caveat.ttf",
+    "url": "https://fonts.gstatic.com/s/caveat/v23/WnznHAc5bAfYB2QRah7pcpNvOx-pjfJ9eIWpZD5Mmgo.ttf",
+    "size_kb": 110.07
+  },
+  "comfortaa": {
+    "name": "Comfortaa",
+    "type": "custom",
+    "file": "Comfortaa.ttf",
+    "url": "https://fonts.gstatic.com/s/comfortaa/v47/1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMDrMfJR1fyc4.ttf",
+    "size_kb": 33.16
+  },
+  "shadows into light": {
+    "name": "Shadows Into Light",
+    "type": "custom",
+    "file": "Shadows_Into_Light.ttf",
+    "url": "https://fonts.gstatic.com/s/shadowsintolight/v22/UqyNK9UOIntux_czAvDQx_ZcHqZXBNQzdcD85TecYQ.ttf",
+    "size_kb": 28.14
+  },
+  "satisfy": {
+    "name": "Satisfy",
+    "type": "custom",
+    "file": "Satisfy.ttf",
+    "url": "https://fonts.gstatic.com/s/satisfy/v22/rP2Hp2yn6lkG50LoCZOIGDWEBlw.ttf",
+    "size_kb": 42.97
+  },
+  "indie flower": {
+    "name": "Indie Flower",
+    "type": "custom",
+    "file": "Indie_Flower.ttf",
+    "url": "https://fonts.gstatic.com/s/indieflower/v24/m8JVjfNVeKWVnh3QMuKkFcZVaUuC99GUDg.ttf",
+    "size_kb": 33.27
+  },
+  "righteous": {
+    "name": "Righteous",
+    "type": "custom",
+    "file": "Righteous.ttf",
+    "url": "https://fonts.gstatic.com/s/righteous/v18/1cXxaUPXBpj2rGoU7C9WiHGAq8Kk1Q.ttf",
+    "size_kb": 29.41
+  },
+  "amatic sc": {
+    "name": "Amatic SC",
+    "type": "custom",
+    "file": "Amatic_SC.ttf",
+    "url": "https://fonts.gstatic.com/s/amaticsc/v28/TUZyzwprpvBS1izr_vOECuSaU5cP1Q.ttf",
+    "size_kb": 36.27
+  },
+  "great vibes": {
+    "name": "Great Vibes",
+    "type": "custom",
+    "file": "Great_Vibes.ttf",
+    "url": "https://fonts.gstatic.com/s/greatvibes/v21/RWmMoKWR9v4ksMfaWd_JN9XFiaEoDmlr.ttf",
+    "size_kb": 57.64
+  },
+  "courgette": {
+    "name": "Courgette",
+    "type": "custom",
+    "file": "Courgette.ttf",
+    "url": "https://fonts.gstatic.com/s/courgette/v19/wEO_EBrAnc9BLjLQAUk1VvoP_kgXiQ.ttf",
+    "size_kb": 42.38
+  },
+  "sacramento": {
+    "name": "Sacramento",
+    "type": "custom",
+    "file": "Sacramento.ttf",
+    "url": "https://fonts.gstatic.com/s/sacramento/v17/buEzpo6gcdjy0EiZMBUG4C0f-P5Iai0.ttf",
+    "size_kb": 44.89
+  },
+  "tangerine": {
+    "name": "Tangerine",
+    "type": "custom",
+    "file": "Tangerine.ttf",
+    "url": "https://fonts.gstatic.com/s/tangerine/v18/IurY6Y5j_oScZZow4VOxCZZJprNA4A.ttf",
+    "size_kb": 34.85
+  },
+  "alex brush": {
+    "name": "Alex Brush",
+    "type": "custom",
+    "file": "Alex_Brush.ttf",
+    "url": "https://fonts.gstatic.com/s/alexbrush/v23/SZc83FzrJKuqFbwMKk6EhUXz6BlNiCY.ttf",
+    "size_kb": 40.76
+  },
+  "parisienne": {
+    "name": "Parisienne",
+    "type": "custom",
+    "file": "Parisienne.ttf",
+    "url": "https://fonts.gstatic.com/s/parisienne/v14/E21i_d3kivvAkxhLEVZpQyhwCsCtevI.ttf",
+    "size_kb": 41.7
+  },
+  "yellowtail": {
+    "name": "Yellowtail",
+    "type": "custom",
+    "file": "Yellowtail.ttf",
+    "url": "https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHxGL9f4k.ttf",
+    "size_kb": 34.14
+  },
+  "bad script": {
+    "name": "Bad Script",
+    "type": "custom",
+    "file": "Bad_Script.ttf",
+    "url": "https://fonts.gstatic.com/s/badscript/v18/6NUT8F6PJgbFWQn47_x7pOskyf9Ddt0.ttf",
+    "size_kb": 42.52
+  },
+  "marck script": {
+    "name": "Marck Script",
+    "type": "custom",
+    "file": "Marck_Script.ttf",
+    "url": "https://fonts.gstatic.com/s/marckscript/v22/nwpTtK2oNgBA3Or78gapdwuyyCg6SsDV7A.ttf",
+    "size_kb": 30.84
+  },
+  "teko": {
+    "name": "Teko",
+    "type": "custom",
+    "file": "Teko.ttf",
+    "url": "https://fonts.gstatic.com/s/teko/v23/LYjYdG7kmE0gV69VVPPdFl06VN8XG4S11zamvVCE.ttf",
+    "size_kb": 17.61
+  },
+  "archivo black": {
+    "name": "Archivo Black",
+    "type": "custom",
+    "file": "Archivo_Black.ttf",
+    "url": "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6CYyF-zzx13E.ttf",
+    "size_kb": 23.39
+  },
+  "inconsolata": {
+    "name": "Inconsolata",
+    "type": "custom",
+    "file": "Inconsolata.ttf",
+    "url": "https://fonts.gstatic.com/s/inconsolata/v37/QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8WR32knWbycs.ttf",
+    "size_kb": 25.19
+  },
+  "allura": {
+    "name": "Allura",
+    "type": "custom",
+    "file": "Allura.ttf",
+    "url": "https://fonts.gstatic.com/s/allura/v23/9oRPNYsQpS4zjuA_iwgTHNn7GQ.ttf",
+    "size_kb": 54.52
+  },
+  "source code pro": {
+    "name": "Source Code Pro",
+    "type": "custom",
+    "file": "Source_Code_Pro.ttf",
+    "url": "https://fonts.gstatic.com/s/sourcecodepro/v31/HI_diYsKILxRpg3hIP6sJ7fM7PqPMcMnZFqUwX28DMyQtMlrSVcfZJk.ttf",
+    "size_kb": 23.34
+  },
+  "fira code": {
+    "name": "Fira Code",
+    "type": "custom",
+    "file": "Fira_Code.ttf",
+    "url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sJVD7M-zjojw.ttf",
+    "size_kb": 55.33
+  },
+  "fjalla one": {
+    "name": "Fjalla One",
+    "type": "custom",
+    "file": "Fjalla_One.ttf",
+    "url": "https://fonts.gstatic.com/s/fjallaone/v16/Yq6R-LCAWCX3-6Ky7FAFrOF6lzouQb4.ttf",
+    "size_kb": 86.35
+  },
+  "space mono": {
+    "name": "Space Mono",
+    "type": "custom",
+    "file": "Space_Mono.ttf",
+    "url": "https://fonts.gstatic.com/s/spacemono/v17/i7dPIFZifjKcF5UAWdDRYEF8QHi4EwQ.ttf",
+    "size_kb": 22.71
+  },
+  "roboto mono": {
+    "name": "Roboto Mono",
+    "type": "custom",
+    "file": "Roboto_Mono.ttf",
+    "url": "https://fonts.gstatic.com/s/robotomono/v31/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vq_ROW9AJ68SA.ttf",
+    "size_kb": 22.39
+  },
+  "jetbrains mono": {
+    "name": "JetBrains Mono",
+    "type": "custom",
+    "file": "JetBrains_Mono.ttf",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlOQk6WThg.ttf",
+    "size_kb": 56.04
+  },
+  "ibm plex mono": {
+    "name": "IBM Plex Mono",
+    "type": "custom",
+    "file": "IBM_Plex_Mono.ttf",
+    "url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q0n1nj-o.ttf",
+    "size_kb": 23.41
+  },
+  "ubuntu mono": {
+    "name": "Ubuntu Mono",
+    "type": "custom",
+    "file": "Ubuntu_Mono.ttf",
+    "url": "https://fonts.gstatic.com/s/ubuntumono/v19/KFOjCneDtsqEr0keqCMhbCc6CsHYl4BO.ttf",
+    "size_kb": 25.01
+  },
+  "source sans 3": {
+    "name": "Source Sans 3",
+    "type": "custom",
+    "file": "Source_Sans_3.ttf",
+    "url": "https://fonts.gstatic.com/s/sourcesans3/v19/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky462EK9C4YnYfA.ttf",
+    "size_kb": 36.45
+  },
+  "pathway gothic one": {
+    "name": "Pathway Gothic One",
+    "type": "custom",
+    "file": "Pathway_Gothic_One.ttf",
+    "url": "https://fonts.gstatic.com/s/pathwaygothicone/v16/MwQrbgD32-KAvjkYGNUUxAtW7pEBwx-tS1ZaTc4PlA.ttf",
+    "size_kb": 17.98
+  },
+  "yanone kaffeesatz": {
+    "name": "Yanone Kaffeesatz",
+    "type": "custom",
+    "file": "Yanone_Kaffeesatz.ttf",
+    "url": "https://fonts.gstatic.com/s/yanonekaffeesatz/v34/3y9I6aknfjLm_3lMKjiMgmUUYBs04aUXNxt9gW2LIfto9tWZd2GPKHb0VQ.ttf",
+    "size_kb": 32.21
+  },
+  "source serif 4": {
+    "name": "Source Serif 4",
+    "type": "custom",
+    "file": "Source_Serif_4.ttf",
+    "url": "https://fonts.gstatic.com/s/sourceserif4/v14/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqnhtdC84FrjQ.ttf",
+    "size_kb": 52.12
+  },
+  "league gothic": {
+    "name": "League Gothic",
+    "type": "custom",
+    "file": "League_Gothic.ttf",
+    "url": "https://fonts.gstatic.com/s/leaguegothic/v13/qFdR35CBi4tvBz81xy7WG7ep-BQAY7Krj7feObpH_9ahg9AYQMhm.ttf",
+    "size_kb": 21.33
+  },
+  "antonio": {
+    "name": "Antonio",
+    "type": "custom",
+    "file": "Antonio.ttf",
+    "url": "https://fonts.gstatic.com/s/antonio/v22/gNMbW3NwSYq_9WD34ngK5F8vR8T0PVxx8StPaWTSSmlN.ttf",
+    "size_kb": 21.61
+  },
+  "saira": {
+    "name": "Saira",
+    "type": "custom",
+    "file": "Saira.ttf",
+    "url": "https://fonts.gstatic.com/s/saira/v23/memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCks8xkyQlQVc.ttf",
+    "size_kb": 31.75
+  },
+  "演示秋鸿楷": {
+    "name": "演示秋鸿楷",
+    "type": "system",
+    "file": null
+  },
+  "杨任东竹石体-semibold": {
+    "name": "杨任东竹石体-Semibold",
+    "type": "system",
+    "file": null
+  },
+  "+mn-ea": {
+    "name": "+mn-ea",
+    "type": "system",
+    "file": null
+  },
+  "+mn-lt": {
+    "name": "+mn-lt",
+    "type": "system",
+    "file": null
+  },
+  "montserrat extrabold": {
+    "name": "Montserrat ExtraBold",
+    "type": "system",
+    "file": null
+  },
+  "poppins medium": {
+    "name": "Poppins Medium",
+    "type": "system",
+    "file": null
+  },
+  "bungee": {
+    "name": "Bungee",
+    "type": "custom",
+    "file": "Bungee.ttf",
+    "url": "https://fonts.gstatic.com/s/bungee/v17/N0bU2SZBIuF2PU_0DXRwC9zfmQ.ttf",
+    "size_kb": 38.66
+  },
+  "poppins semibold": {
+    "name": "Poppins SemiBold",
+    "type": "system",
+    "file": null
+  },
+  "poppins extrabold": {
+    "name": "Poppins ExtraBold",
+    "type": "system",
+    "file": null
+  },
+  "+mj-lt": {
+    "name": "+mj-lt",
+    "type": "system",
+    "file": null
+  }
+}

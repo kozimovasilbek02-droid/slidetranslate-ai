@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Node / React
+frontend/node_modules/
+node_modules/
+dist/
+
+# User uploads and exports
+uploads/*
+!uploads/.gitkeep
+exports/*
+!exports/.gitkeep
+temp_sessions/*
+.playwright-mcp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+.env
+.env.*
