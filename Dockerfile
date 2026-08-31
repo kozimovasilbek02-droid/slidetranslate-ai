@@ -38,4 +38,4 @@ RUN mkdir -p uploads exports backend/fonts temp_sessions
 EXPOSE 8000
 
 # Start both Telegram Bot and FastAPI Web Server concurrently in 1 container
-CMD ["sh", "-c", "python -u bot.py & uvicorn backend.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python -u bot.py & uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
