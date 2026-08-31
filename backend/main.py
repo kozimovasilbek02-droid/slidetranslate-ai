@@ -62,9 +62,23 @@ async def bot_worker():
     except Exception as e:
         print(f"Telegram botni ishga tushirishda xatolik: {e}")
 
+async def keep_alive_pinger():
+    await asyncio.sleep(30)
+    url = os.environ.get("WEBHOOK_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "https://slidetranslate-ai.onrender.com"
+    health_url = f"{url.rstrip('/')}/health"
+    while True:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                await client.get(health_url, timeout=15)
+        except Exception:
+            pass
+        await asyncio.sleep(600)
+
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(bot_worker())
+    asyncio.create_task(keep_alive_pinger())
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
