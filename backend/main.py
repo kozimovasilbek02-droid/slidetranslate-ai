@@ -9,44 +9,21 @@ from pydantic import BaseModel
 from backend.core.pptx_processor import PPTXProcessor
 from backend.core.gemini_translator import GeminiTranslator
 
-app = FastAPI(title="SlideTranslate AI", version="2.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from contextlib import asynccontextmanager
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exports")
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "service": "SlideTranslate AI", "uptime": "24/7 active"}
-
-@app.post("/webhook")
-async def telegram_webhook(update: dict):
-    try:
-        from aiogram.types import Update as TgUpdate
-        from bot import dp, bot as telegram_bot
-        telegram_update = TgUpdate.model_validate(update, context={"bot": telegram_bot})
-        await dp.feed_update(telegram_bot, telegram_update)
-    except Exception as e:
-        print(f"Error handling webhook update: {e}")
-    return {"ok": True}
-
 async def bot_worker():
     await asyncio.sleep(2)
     try:
         from bot import dp, bot as telegram_bot
-        print("🤖 SlideTranslate Telegram Bot 24/7 doimiy polling rejimida ishlamoqda...")
+        print("🤖 SlideTranslate Telegram Bot 24/7 doimiy polling rejimida ishga tushmoqda...")
         while True:
             try:
                 await telegram_bot.delete_webhook(drop_pending_updates=False)
-                print("✅ SlideTranslate Telegram Bot polling faol!")
+                print("✅ SlideTranslate Telegram Bot polling faol va xabarlarni qabul qilmoqda!")
                 await dp.start_polling(telegram_bot)
             except asyncio.CancelledError:
                 break
@@ -69,10 +46,44 @@ async def keep_alive_pinger():
             pass
         await asyncio.sleep(600)
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(bot_worker())
-    asyncio.create_task(keep_alive_pinger())
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task1 = asyncio.create_task(bot_worker())
+    task2 = asyncio.create_task(keep_alive_pinger())
+    yield
+    task1.cancel()
+    task2.cancel()
+    try:
+        from bot import bot as telegram_bot
+        await telegram_bot.session.close()
+    except Exception:
+        pass
+
+app = FastAPI(title="SlideTranslate AI", version="2.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check():
+    return {"status": "ok", "service": "SlideTranslate AI", "uptime": "24/7 active"}
+
+@app.post("/webhook")
+async def telegram_webhook(update: dict):
+    try:
+        from aiogram.types import Update as TgUpdate
+        from bot import dp, bot as telegram_bot
+        telegram_update = TgUpdate.model_validate(update, context={"bot": telegram_bot})
+        await dp.feed_update(telegram_bot, telegram_update)
+    except Exception as e:
+        print(f"Error handling webhook update: {e}")
+    return {"ok": True}
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
