@@ -23,9 +23,9 @@ class GeminiTranslator:
         self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
         self.client = genai.Client(api_key=self.api_key) if self.api_key else genai.Client()
         self.model_candidates = [
-            "gemini-3.6-flash",
             "gemini-3.5-flash",
             "gemini-3.5-flash-lite",
+            "gemini-3.6-flash",
             "gemini-3.1-pro-preview"
         ]
         self.model_name = model_name or os.environ.get("GEMINI_MODEL") or self.model_candidates[0]
@@ -126,9 +126,30 @@ QAT'IY QOIDALAR:
                 return [{"id": it["id"], "translated_text": result_map.get(it["id"], sanitize_text(it["original_text"]))} for it in items]
 
             except Exception as e:
-                time.sleep(1.0 * (attempt + 1))
+                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    time.sleep(3.0 * (attempt + 1))
+                else:
+                    time.sleep(1.0 * (attempt + 1))
                 if attempt == len(self.model_candidates) - 1:
-                    return [{"id": it["id"], "translated_text": sanitize_text(it["original_text"])} for it in items]
+                    # Seamless Fallback to deep_translator
+                    try:
+                        from deep_translator import GoogleTranslator
+                        gt = GoogleTranslator(source='auto', target='uz')
+                        fallback_results = []
+                        for it in items:
+                            orig = sanitize_text(it["original_text"])
+                            if not orig:
+                                fallback_results.append({"id": it["id"], "translated_text": ""})
+                                continue
+                            try:
+                                tr = gt.translate(orig)
+                                tr_clean = ensure_script(sanitize_text(tr), target_script)
+                                fallback_results.append({"id": it["id"], "translated_text": tr_clean})
+                            except Exception:
+                                fallback_results.append({"id": it["id"], "translated_text": orig})
+                        return fallback_results
+                    except Exception:
+                        return [{"id": it["id"], "translated_text": sanitize_text(it["original_text"])} for it in items]
 
     def translate_single_text(self, text: str, target_script: str = "latin") -> str:
         if not text or not text.strip():
@@ -156,4 +177,16 @@ Matn: "{clean_in}\""""
                     return out
             except Exception:
                 continue
-        return clean_in
+
+        # Fallback to deep_translator
+        try:
+            from deep_translator import GoogleTranslator
+            gt = GoogleTranslator(source='auto', target='uz')
+            tr = gt.translate(clean_in)
+            out = re.sub(r'(\s*[-_]?\s*(tarjima|ozbekcha|ўзбекча)[a-z]*)$', '', tr, flags=re.IGNORECASE)
+            out = re.sub(r'[/\\:*?"<>|_]', ' ', out)
+            out = re.sub(r'\s+', ' ', out).strip()
+            return out if out else clean_in
+        except Exception:
+            return clean_in
+

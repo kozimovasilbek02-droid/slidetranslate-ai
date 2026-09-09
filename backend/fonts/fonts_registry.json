@@ -870,5 +870,240 @@
     "name": "+mj-lt",
     "type": "system",
     "file": null
+  },
+  "amiko": {
+    "name": "Amiko",
+    "type": "custom",
+    "file": "Amiko.ttf",
+    "url": "https://fonts.gstatic.com/s/amiko/v15/WwkQxPq1DFK04uqieVruMogI.ttf",
+    "size_kb": 23.06
+  },
+  "inter light": {
+    "name": "Inter Light",
+    "type": "system",
+    "file": null
+  },
+  "kodchasan": {
+    "name": "Kodchasan",
+    "type": "custom",
+    "file": "Kodchasan.ttf",
+    "url": "https://fonts.gstatic.com/s/kodchasan/v20/1cXxaUPOAJv9sG4I-DJWiHGAq8Kk1Q.ttf",
+    "size_kb": 33.84
+  },
+  "exo 2 semibold": {
+    "name": "Exo 2 SemiBold",
+    "type": "system",
+    "file": null
+  },
+  "exo 2 medium": {
+    "name": "Exo 2 Medium",
+    "type": "system",
+    "file": null
+  },
+  "exo 2 light": {
+    "name": "Exo 2 Light",
+    "type": "system",
+    "file": null
+  },
+  "barlow": {
+    "name": "Barlow",
+    "type": "custom",
+    "file": "Barlow.ttf",
+    "url": "https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7E_DMs8ynghnQ.ttf",
+    "size_kb": 34.62
+  },
+  "poiret one": {
+    "name": "Poiret One",
+    "type": "custom",
+    "file": "Poiret_One.ttf",
+    "url": "https://fonts.gstatic.com/s/poiretone/v18/UqyVK80NJXN4zfRgbdfbo55cUuUyZKA.ttf",
+    "size_kb": 18.34
+  },
+  "architects daughter": {
+    "name": "Architects Daughter",
+    "type": "custom",
+    "file": "Architects_Daughter.ttf",
+    "url": "https://fonts.gstatic.com/s/architectsdaughter/v20/KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvTYlg5u7jA-U.ttf",
+    "size_kb": 21.86
+  },
+  "charm": {
+    "name": "Charm",
+    "type": "custom",
+    "file": "Charm.ttf",
+    "url": "https://fonts.gstatic.com/s/charm/v14/7cHmv4oii5K0MdYoK-sW4nIp.ttf",
+    "size_kb": 43.49
+  },
+  "montserrat semibold": {
+    "name": "Montserrat SemiBold",
+    "type": "system",
+    "file": null
+  },
+  "raleway light": {
+    "name": "Raleway Light",
+    "type": "system",
+    "file": null
+  },
+  "raleway black": {
+    "name": "Raleway Black",
+    "type": "system",
+    "file": null
+  },
+  "montserrat medium": {
+    "name": "Montserrat Medium",
+    "type": "system",
+    "file": null
+  },
+  "paytone one": {
+    "name": "Paytone One",
+    "type": "custom",
+    "file": "Paytone_One.ttf",
+    "url": "https://fonts.gstatic.com/s/paytoneone/v25/0nksC9P7MfYHj2oFtYm2ChTtgP7fiwq-.ttf",
+    "size_kb": 35.85
+  },
+  "nunito medium": {
+    "name": "Nunito Medium",
+    "type": "system",
+    "file": null
+  },
+  "blinker": {
+    "name": "Blinker",
+    "type": "custom",
+    "file": "Blinker.ttf",
+    "url": "https://fonts.gstatic.com/s/blinker/v14/cIf9MaFatEE-VTaP9C6hZEsEkIo.ttf",
+    "size_kb": 32.58
+  },
+  "grand hotel": {
+    "name": "Grand Hotel",
+    "type": "custom",
+    "file": "Grand_Hotel.ttf",
+    "url": "https://fonts.gstatic.com/s/grandhotel/v21/7Au7p_IgjDKdCRWuR1azplQKGFks0VEw.ttf",
+    "size_kb": 44.55
+  },
+  "lato black": {
+    "name": "Lato Black",
+    "type": "system",
+    "file": null
+  },
+  "racing sans one": {
+    "name": "Racing Sans One",
+    "type": "custom",
+    "file": "Racing_Sans_One.ttf",
+    "url": "https://fonts.gstatic.com/s/racingsansone/v17/sykr-yRtm7EvTrXNxkv5jfKKyDCAKHDieJERtQ.ttf",
+    "size_kb": 39.37
+  },
+  "dosis extrabold": {
+    "name": "Dosis ExtraBold",
+    "type": "system",
+    "file": null
+  },
+  "bell mt": {
+    "name": "Bell MT",
+    "type": "custom",
+    "file": "Bell_MT.ttf",
+    "url": "https://fonts.gstatic.com/l/font?kit=JTUXjIU69Cy1oWihSAht5URDxg4&skey=4d6b05045d2a583d&v=v19",
+    "size_kb": 29.58
+  },
+  "arial black": {
+    "name": "Arial Black",
+    "type": "custom",
+    "file": "Arial_Black.ttf",
+    "url": "https://fonts.gstatic.com/l/font?kit=8AttGsyyIJeeQk-K7cT5V6nUqR_yBTos&skey=f5c444da86865f17&v=v19",
+    "size_kb": 20.32
+  },
+  "adobe song std l": {
+    "name": "Adobe Song Std L",
+    "type": "system",
+    "file": null
+  },
+  "brush script mt": {
+    "name": "Brush Script MT",
+    "type": "system",
+    "file": null
+  },
+  "franklin gothic heavy": {
+    "name": "Franklin Gothic Heavy",
+    "type": "system",
+    "file": null
+  },
+  "franklin gothic medium": {
+    "name": "Franklin Gothic Medium",
+    "type": "system",
+    "file": null
+  },
+  "brush script std": {
+    "name": "Brush Script Std",
+    "type": "system",
+    "file": null
+  },
+  "adobe caslon pro bold": {
+    "name": "Adobe Caslon Pro Bold",
+    "type": "system",
+    "file": null
+  },
+  "arial narrow": {
+    "name": "Arial Narrow",
+    "type": "system",
+    "file": null
+  },
+  "aharoni": {
+    "name": "Aharoni",
+    "type": "system",
+    "file": null
+  },
+  "adobe fan heiti std b": {
+    "name": "Adobe Fan Heiti Std B",
+    "type": "system",
+    "file": null
+  },
+  "agency fb": {
+    "name": "Agency FB",
+    "type": "system",
+    "file": null
+  },
+  "chiller": {
+    "name": "Chiller",
+    "type": "system",
+    "file": null
+  },
+  "bernard mt condensed": {
+    "name": "Bernard MT Condensed",
+    "type": "system",
+    "file": null
+  },
+  "adobe 고딕 std b": {
+    "name": "Adobe 고딕 Std B",
+    "type": "system",
+    "file": null
+  },
+  "montserrat-regular": {
+    "name": "Montserrat-Regular",
+    "type": "system",
+    "file": null
+  },
+  "tw cen mt": {
+    "name": "Tw Cen MT",
+    "type": "system",
+    "file": null
+  },
+  "century gothic": {
+    "name": "Century Gothic",
+    "type": "custom",
+    "file": "Century_Gothic.ttf",
+    "url": "https://fonts.gstatic.com/l/font?kit=Cn-vJt-LUxZV2ICofzrQFC41xsIia3ablBeU&skey=93c2fdf69b410576&v=v20",
+    "size_kb": 18.09
+  },
+  "ranchers": {
+    "name": "Ranchers",
+    "type": "custom",
+    "file": "Ranchers.ttf",
+    "url": "https://fonts.gstatic.com/s/ranchers/v19/zrfm0H3Lx-P2Xvs2ArDfBirfXiHu.ttf",
+    "size_kb": 44.12
+  },
+  "dekko": {
+    "name": "Dekko",
+    "type": "custom",
+    "file": "Dekko.ttf",
+    "url": "https://fonts.gstatic.com/s/dekko/v23/46khlb_wWjfSrutCTU_OfU1A.ttf",
+    "size_kb": 32.38
   }
 }

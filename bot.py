@@ -42,6 +42,7 @@ from aiogram.types import (
 from backend.core.pptx_processor import PPTXProcessor
 from backend.core.gemini_translator import GeminiTranslator
 from backend.core.font_manager import font_manager
+from backend.core.thumbnail_generator import ThumbnailGenerator
 from backend.main import translate_clean_filename, UPLOADS_DIR, EXPORTS_DIR
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -475,7 +476,28 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             target_script=target_script
         )
 
-        # 6. Edit status and send translated document
+        # 6. Generate Slide 1 preview image and thumbnail for Telegram
+        preview_img_path = os.path.join(EXPORTS_DIR, f"{session_id}_preview.jpg")
+        thumb_320_path = os.path.join(EXPORTS_DIR, f"{session_id}_thumb320.jpg")
+        has_preview = False
+        try:
+            has_preview = await asyncio.to_thread(
+                ThumbnailGenerator.export_slide_preview,
+                out_path,
+                preview_img_path,
+                1920,
+                1080
+            )
+            if has_preview and os.path.exists(preview_img_path):
+                from PIL import Image
+                with Image.open(preview_img_path) as im:
+                    im_thumb = im.copy()
+                    im_thumb.thumbnail((320, 320))
+                    im_thumb.save(thumb_320_path, "JPEG", quality=85)
+        except Exception as te:
+            logger.warning(f"Preview generatsiyasida xatolik: {te}")
+
+        # 7. Edit status and send translated document with preview
         await status_msg.edit_text("✅ <b>Tarjima tayyor! Fayl yuborilmoqda...</b>", parse_mode="HTML")
 
         caption = (
@@ -489,7 +511,25 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         )
 
         input_file = FSInputFile(path=out_path, filename=out_filename)
-        await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
+        tg_thumb = FSInputFile(path=thumb_320_path) if os.path.exists(thumb_320_path) else None
+
+        # Send photo preview first if available
+        if has_preview and os.path.exists(preview_img_path):
+            try:
+                photo_file = FSInputFile(path=preview_img_path)
+                await msg.reply_photo(
+                    photo=photo_file,
+                    caption=f"🖼 <b>1-slayd ko'rinishi (Preview):</b>\n📁 <code>{out_filename}</code>",
+                    parse_mode="HTML"
+                )
+            except Exception as pe:
+                logger.warning(f"Photo yuborishda xatolik: {pe}")
+
+        if tg_thumb:
+            await msg.reply_document(document=input_file, thumbnail=tg_thumb, caption=caption, parse_mode="HTML")
+        else:
+            await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
+            
         await status_msg.delete()
 
     except Exception as e:

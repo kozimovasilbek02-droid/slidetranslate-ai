@@ -8,6 +8,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from backend.core.transliteration import ensure_script
 from backend.core.font_manager import font_manager
+from backend.core.thumbnail_generator import ThumbnailGenerator
 
 def sanitize_control_chars(text: str) -> str:
     if not text:
@@ -24,6 +25,18 @@ class PPTXProcessor:
         r"free templates?", r"questions or need help", r"visit our faq",
         r"更多精品", r"ppt模板", r"ppt背景", r"by:\s*", r"\.com",
         r"51ppt", r"优品ppt"
+    ]
+
+    AD_SLIDE_PATTERNS = [
+        r"slidescarnival", r"slidesgo", r"presentationgo", r"slidesmania",
+        r"poweredtemplate", r"slidemodel", r"this presentation template is free",
+        r"this template is free for everyone", r"ushbu taqdimot shabloni",
+        r"uses the following free fonts", r"instructions for use",
+        r"fonts & colors used", r"alternative resources", r"happy designing",
+        r"ijodingizga zafarlar", r"credits\s*:", r"visit slidescarnival",
+        r"visit slidesgo", r"更多精品", r"ppt模板", r"ppt背景", r"51ppt", r"优品ppt", r"ypppt",
+        r"minnatdorchilik", r"pexels, pixabay", r"terms of use",
+        r"editable icons", r"free icons", r"customizable icons", r"free fonts online"
     ]
 
     @staticmethod
@@ -58,10 +71,47 @@ class PPTXProcessor:
         return False
 
     @staticmethod
+    def _is_ad_slide(slide) -> bool:
+        """Taqdimot oxiridagi SlidesCarnival/Slidesgo/Freepik reklama va minnatdorchilik slaydlarini aniqlash."""
+        texts = []
+        for sh in slide.shapes:
+            if sh.has_text_frame:
+                texts.append(sanitize_control_chars(sh.text_frame.text))
+            elif sh.has_table:
+                for row in sh.table.rows:
+                    for cell in row.cells:
+                        if cell.text_frame:
+                            texts.append(sanitize_control_chars(cell.text_frame.text))
+        combined = " ".join(texts).lower()
+        if not combined.strip():
+            return False
+        return any(re.search(pat, combined) for pat in PPTXProcessor.AD_SLIDE_PATTERNS)
+
+    @staticmethod
+    def _delete_slide(prs: Presentation, index: int):
+        """Taqdimotdan berilgan indeksdagi slaydni butunlay xavfsiz o'chirish."""
+        try:
+            sldIdLst = prs.slides._sldIdLst
+            sldId = sldIdLst[index]
+            rId = sldId.rId
+            prs.part.drop_rel(rId)
+            sldIdLst.remove(sldId)
+        except Exception:
+            pass
+
+    @staticmethod
     def clean_presentation_watermarks(prs: Presentation) -> int:
         removed = 0
         
-        # 1. Clean Slide Masters and Layouts
+        # 1. Taqdimot oxiridagi barcha reklama/minnatdorchilik slaydlarini to'liq o'chirish
+        slide_count = len(prs.slides)
+        for s_idx in range(slide_count - 1, -1, -1):
+            slide = prs.slides[s_idx]
+            if PPTXProcessor._is_ad_slide(slide):
+                PPTXProcessor._delete_slide(prs, s_idx)
+                removed += 1
+
+        # 2. Clean Slide Masters and Layouts
         for master in prs.slide_masters:
             for sh in list(master.shapes):
                 if PPTXProcessor._is_watermark_recursive(sh):
@@ -96,7 +146,7 @@ class PPTXProcessor:
                                 except Exception:
                                     pass
 
-        # 2. Clean Slide Level Watermarks
+        # 3. Clean Slide Level Watermarks
         for slide in prs.slides:
             for sh in list(slide.shapes):
                 if PPTXProcessor._is_watermark_recursive(sh):
@@ -162,6 +212,8 @@ class PPTXProcessor:
         slide_height = prs.slide_height
 
         for s_idx, slide in enumerate(prs.slides, start=1):
+            if PPTXProcessor._is_ad_slide(slide):
+                continue
             slide_items = []
             PPTXProcessor._extract_shapes_recursive(
                 shapes=slide.shapes,
@@ -172,8 +224,9 @@ class PPTXProcessor:
             )
             total_items_count += len(slide_items)
             slides_data.append({
-                "slide_index": s_idx,
-                "slide_id": f"slide_{s_idx}",
+                "slide_index": len(slides_data) + 1,
+                "slide_id": f"slide_{len(slides_data) + 1}",
+                "orig_slide_index": s_idx,
                 "items_count": len(slide_items),
                 "items": slide_items
             })
@@ -349,6 +402,13 @@ class PPTXProcessor:
 
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
+
+        # 1-slayd preview rasmini generatsiya qilish va .pptx arxivi ichiga embed qilish
+        try:
+            ThumbnailGenerator.embed_thumbnail_into_pptx(output_pptx_path)
+        except Exception as e:
+            print(f"[PPTXProcessor] Thumbnail yaratishda ogohlantirish: {e}")
+
         return output_pptx_path
 
     @staticmethod
