@@ -1105,5 +1105,10 @@
     "file": "Dekko.ttf",
     "url": "https://fonts.gstatic.com/s/dekko/v23/46khlb_wWjfSrutCTU_OfU1A.ttf",
     "size_kb": 32.38
+  },
+  "barlow black": {
+    "name": "Barlow Black",
+    "type": "system",
+    "file": null
   }
 }
