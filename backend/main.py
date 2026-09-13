@@ -1,4 +1,4 @@
-import os, uuid, re, urllib.parse, asyncio
+﻿import os, uuid, re, urllib.parse, asyncio
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,14 +15,27 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exports")
 
+def get_bot_mode() -> str:
+    mode = os.getenv("BOT_MODE", "").lower().strip()
+    if mode:
+        return mode
+    if os.getenv("USE_WEBHOOK", "false").lower() == "true":
+        return "webhook"
+    return "polling"
+
 async def bot_worker():
+    bot_mode = get_bot_mode()
+    if bot_mode in ["webhook", "none", "disabled", "off"]:
+        print(f"ℹ️ Telegram bot mode is '{bot_mode}'. Background polling worker skipped.")
+        return
+        
     await asyncio.sleep(2)
     try:
         from bot import dp, bot as telegram_bot
         print("🤖 SlideTranslate Telegram Bot 24/7 doimiy polling rejimida ishga tushmoqda...")
         while True:
             try:
-                await telegram_bot.delete_webhook(drop_pending_updates=False)
+                await telegram_bot.delete_webhook(drop_pending_updates=True)
                 print("✅ SlideTranslate Telegram Bot polling faol va xabarlarni qabul qilmoqda!")
                 await dp.start_polling(telegram_bot)
             except asyncio.CancelledError:
@@ -76,6 +89,10 @@ async def health_check():
 
 @app.post("/webhook")
 async def telegram_webhook(update: dict):
+    bot_mode = get_bot_mode()
+    if bot_mode != "webhook":
+        return {"ok": False, "error": f"Webhook is disabled (current bot mode: '{bot_mode}')"}
+        
     try:
         from aiogram.types import Update as TgUpdate
         from bot import dp, bot as telegram_bot
@@ -84,6 +101,7 @@ async def telegram_webhook(update: dict):
     except Exception as e:
         print(f"Error handling webhook update: {e}")
     return {"ok": True}
+
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
@@ -109,18 +127,21 @@ def translate_clean_filename(raw_filename: str, translator: GeminiTranslator, ta
     base = re.sub(r"[\(\[\{]\d+[\)\]\}]", "", base)
     base = re.sub(r"[-_]?\s*(tarjima(si)?|ozbekcha|uz|translated|translation)", "", base, flags=re.IGNORECASE).strip()
     
+    translated_ok = False
     try:
         translated = translator.translate_single_text(base, target_script=target_script)
-        if translated and translated.strip() and translated != base:
-            base = translated
+        if translated and translated.strip() and translated.strip() != base.strip():
+            base = translated.strip()
+            translated_ok = True
     except Exception:
         pass
         
-    for k, v in DICT_TITLES.items():
-        base = base.replace(k, v)
+    if not translated_ok:
+        for k, v in DICT_TITLES.items():
+            base = base.replace(k, v)
         
     base = re.sub(r'[/\\:*?"<>|_]', " ", base)
-    base = re.sub(r"(\s*[-_]?\s*[Tt]arjima(si)?|\s*[-_]?\s*[Oo][‘'`]?zbekcha)$", "", base, flags=re.IGNORECASE)
+    base = re.sub(r"(\s*[-_]?\s*[Tt]arjima(si)?|\s*[-_]?\s*[Oo][’'`]?zbekcha)$", "", base, flags=re.IGNORECASE)
     base = re.sub(r"\s+", " ", base).strip()
     return base if base else "Taqdimot"
 
@@ -273,4 +294,3 @@ async def get_font_file(filename: str):
 dist = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(dist):
     app.mount("/", StaticFiles(directory=dist, html=True), name="frontend")
-

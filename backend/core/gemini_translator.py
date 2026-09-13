@@ -98,6 +98,7 @@ QAT'IY QOIDALAR:
         prompt_payload = [{"id": it["id"], "text": sanitize_text(it["original_text"])} for it in items]
         user_content = json.dumps(prompt_payload, ensure_ascii=False, indent=2)
 
+        result_map = {}
         for attempt in range(len(self.model_candidates)):
             cur_model = self.model_candidates[attempt % len(self.model_candidates)]
             try:
@@ -116,41 +117,36 @@ QAT'IY QOIDALAR:
                 raw_text = re.sub(r"\s*```$", "", raw_text)
 
                 parsed = json.loads(raw_text)
-                result_map = {}
                 if isinstance(parsed, list):
                     for row in parsed:
                         if isinstance(row, dict) and "id" in row:
                             t_val = row.get("translated") or row.get("translated_text") or row.get("text") or row.get("uzbek") or ""
                             result_map[row["id"]] = ensure_script(sanitize_text(t_val), target_script)
-
-                return [{"id": it["id"], "translated_text": result_map.get(it["id"], sanitize_text(it["original_text"]))} for it in items]
-
+                if result_map:
+                    break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                     time.sleep(3.0 * (attempt + 1))
                 else:
                     time.sleep(1.0 * (attempt + 1))
-                if attempt == len(self.model_candidates) - 1:
-                    # Seamless Fallback to deep_translator
-                    try:
-                        from deep_translator import GoogleTranslator
-                        gt = GoogleTranslator(source='auto', target='uz')
-                        fallback_results = []
-                        for it in items:
-                            orig = sanitize_text(it["original_text"])
-                            if not orig:
-                                fallback_results.append({"id": it["id"], "translated_text": ""})
-                                continue
-                            try:
-                                tr = gt.translate(orig)
-                                tr_clean = ensure_script(sanitize_text(tr), target_script)
-                                fallback_results.append({"id": it["id"], "translated_text": tr_clean})
-                            except Exception:
-                                fallback_results.append({"id": it["id"], "translated_text": orig})
-                        return fallback_results
-                    except Exception:
-                        return [{"id": it["id"], "translated_text": sanitize_text(it["original_text"])} for it in items]
 
+        # Fill missing items via fallback translator
+        results = []
+        for it in items:
+            item_id = it["id"]
+            if item_id in result_map and result_map[item_id].strip():
+                results.append({"id": item_id, "translated_text": result_map[item_id]})
+            else:
+                try:
+                    from deep_translator import GoogleTranslator
+                    gt = GoogleTranslator(source="auto", target="uz")
+                    orig = sanitize_text(it["original_text"])
+                    tr = gt.translate(orig) if orig else ""
+                    results.append({"id": item_id, "translated_text": ensure_script(sanitize_text(tr or orig), target_script)})
+                except Exception:
+                    results.append({"id": item_id, "translated_text": sanitize_text(it["original_text"])})
+
+        return results
     def translate_single_text(self, text: str, target_script: str = "latin") -> str:
         if not text or not text.strip():
             return "Taqdimot"

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Head -50)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\SlideTranslate_AI\" -Recurse -File | Select-Object -First 50 | ForEach-Object { $_.FullName })"
+    ]
+  }
+}

@@ -58,13 +58,15 @@ class PPTXProcessor:
         return any(re.search(pat, t) for pat in PPTXProcessor.WATERMARK_PATTERNS)
 
     @staticmethod
-    def _is_watermark_recursive(shape) -> bool:
+    def _is_watermark_recursive(shape, depth: int = 0, max_depth: int = 10) -> bool:
+        if depth >= max_depth:
+            return False
         if shape.has_text_frame and PPTXProcessor._is_watermark_text(shape.text_frame.text):
             return True
         if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
             try:
                 for sub in shape.shapes:
-                    if PPTXProcessor._is_watermark_recursive(sub):
+                    if PPTXProcessor._is_watermark_recursive(sub, depth + 1, max_depth):
                         return True
             except Exception:
                 pass
@@ -240,7 +242,9 @@ class PPTXProcessor:
         }
 
     @staticmethod
-    def _extract_shapes_recursive(shapes, slide_index: int, slide_width, slide_height, items_list: list, prefix: str = ""):
+    def _extract_shapes_recursive(shapes, slide_index: int, slide_width, slide_height, items_list: list, prefix: str = "", depth: int = 0, max_depth: int = 10):
+        if depth >= max_depth:
+            return
         for sh_idx, shape in enumerate(shapes):
             sh_id_str = f"{prefix}sh{getattr(shape, 'shape_id', sh_idx)}"
             box_info = {"left": 5, "top": 5, "width": 90, "height": 20}
@@ -258,7 +262,7 @@ class PPTXProcessor:
             # 1. Group shapes
             if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                 try:
-                    PPTXProcessor._extract_shapes_recursive(shape.shapes, slide_index, slide_width, slide_height, items_list, prefix=f"{sh_id_str}_g")
+                    PPTXProcessor._extract_shapes_recursive(shape.shapes, slide_index, slide_width, slide_height, items_list, prefix=f"{sh_id_str}_g", depth=depth + 1, max_depth=max_depth)
                 except Exception:
                     pass
                 continue
@@ -412,14 +416,16 @@ class PPTXProcessor:
         return output_pptx_path
 
     @staticmethod
-    def _apply_to_shapes_recursive(shapes, slide_index: int, translations_map: Dict[str, str], auto_fit: bool, target_script: str, prefix: str = ""):
+    def _apply_to_shapes_recursive(shapes, slide_index: int, translations_map: Dict[str, str], auto_fit: bool, target_script: str, prefix: str = "", depth: int = 0, max_depth: int = 10):
+        if depth >= max_depth:
+            return
         for sh_idx, shape in enumerate(shapes):
             sh_id_str = f"{prefix}sh{getattr(shape, 'shape_id', sh_idx)}"
 
             # 1. Group
             if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                 try:
-                    PPTXProcessor._apply_to_shapes_recursive(shape.shapes, slide_index, translations_map, auto_fit, target_script, prefix=f"{sh_id_str}_g")
+                    PPTXProcessor._apply_to_shapes_recursive(shape.shapes, slide_index, translations_map, auto_fit, target_script, prefix=f"{sh_id_str}_g", depth=depth + 1, max_depth=max_depth)
                 except Exception:
                     pass
                 continue
@@ -501,7 +507,7 @@ class PPTXProcessor:
         orig_font_name = first_run.font.name if (first_run.font and first_run.font.name) else None
 
         clean_val = sanitize_control_chars(new_text)
-        safe_text = re.sub(r"([A-Za-zА-Яа-яЎўҒғҚқҲҳ])['\‘\`\ʼ]([A-Za-zА-Яа-яЎўҒғҚқҲҳ])", lambda m: m.group(1) + "ʻ\u2060" + m.group(2), clean_val)
+        safe_text = re.sub(r"([A-Za-zА-Яа-яЎўҒғҚқҲҳ])['`’‘ʼʻ]([A-Za-zА-Яа-яЎўҒғҚқҲҳ])", r"\1'\2", clean_val)
 
         orig_len = float(len(orig_text))
         new_len = float(len(safe_text))

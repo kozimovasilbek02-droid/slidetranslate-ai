@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 import sys
 
@@ -536,8 +536,24 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         logger.error(f"Xatolik yuz berdi: {e}", exc_info=True)
         await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
 
+def get_bot_mode() -> str:
+    mode = os.environ.get("BOT_MODE", "").lower().strip()
+    if mode:
+        return mode
+    if os.environ.get("USE_WEBHOOK", "false").lower() == "true":
+        return "webhook"
+    return "polling"
+
 async def run_bot():
-    await bot.delete_webhook(drop_pending_updates=False)
+    bot_mode = get_bot_mode()
+    if bot_mode in ["none", "disabled", "off"]:
+        print("ℹ️ Telegram bot is disabled via BOT_MODE env var.")
+        return
+    if bot_mode == "webhook":
+        print("ℹ️ Telegram bot is in WEBHOOK mode. Standalone polling will not start.")
+        return
+
+    await bot.delete_webhook(drop_pending_updates=True)
     print("=" * 65)
     print("      🤖 SlideTranslate AI — Telegram Boti Ishga Tushdi!")
     print("      Har bir foydalanuvchi o'zining Gemini kalitidan foydalanadi.")
