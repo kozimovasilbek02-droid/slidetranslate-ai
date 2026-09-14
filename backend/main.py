@@ -1,4 +1,4 @@
-﻿import os, uuid, re, urllib.parse, asyncio
+import os, uuid, re, urllib.parse, asyncio
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,12 +80,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition", "X-Translation-Warning", "X-Font-Warning"],
 )
 
 @app.api_route("/", methods=["GET", "HEAD"])
 @app.api_route("/health", methods=["GET", "HEAD"])
+@app.api_route("/api/v1/health", methods=["GET", "HEAD"])
 async def health_check():
-    return {"status": "ok", "service": "SlideTranslate AI", "uptime": "24/7 active"}
+    return {"status": "ok", "service": "SlideTranslate AI", "version": "2.5.0", "uptime": "24/7 active"}
 
 @app.post("/webhook")
 async def telegram_webhook(update: dict):
@@ -290,6 +292,69 @@ async def get_font_file(filename: str):
     if not os.path.exists(font_path):
         raise HTTPException(status_code=404, detail="Shrift fayli topilmadi")
     return FileResponse(font_path, media_type="font/ttf")
+
+@app.post("/api/v1/translate")
+async def translate_v1_direct(
+    file: UploadFile = File(...),
+    target_lang: str = Form("uz-Latn"),
+    api_key: Optional[str] = Form(None),
+    domain: str = Form("general"),
+    auto_fit: bool = Form(True)
+):
+    if not file.filename or not file.filename.lower().endswith((".pptx", ".potx")):
+        raise HTTPException(status_code=400, detail="Faqat .pptx formatidagi fayllar qabul qilinadi.")
+
+    target_script = "cyrillic" if target_lang.lower() in ["uz-cyrl", "cyrillic", "kirill"] else "latin"
+    session_id = str(uuid.uuid4())
+    in_path = os.path.join(UPLOADS_DIR, f"{session_id}_{file.filename}")
+    with open(in_path, "wb") as f:
+        f.write(await file.read())
+
+    # Extract presentation data
+    extracted = PPTXProcessor.extract_presentation_data(in_path)
+    all_items = [it for s in extracted.get("slides", []) for it in s.get("items", [])]
+
+    translator = GeminiTranslator(api_key=api_key)
+    stats: Dict[str, Any] = {}
+    if all_items:
+        translated_results = translator.translate_items_batch(
+            items=all_items,
+            target_script=target_script,
+            domain=domain,
+            stats=stats
+        )
+        trans_map = {r["id"]: r["translated_text"] for r in translated_results}
+    else:
+        trans_map = {}
+
+    clean_title = translate_clean_filename(file.filename, translator, target_script)
+    if not clean_title.lower().endswith(".pptx"):
+        out_filename = f"{clean_title}.pptx"
+    else:
+        out_filename = clean_title
+
+    out_path = os.path.join(EXPORTS_DIR, f"{session_id}_{out_filename}")
+    PPTXProcessor.apply_translations_and_export(
+        original_pptx_path=in_path,
+        translations_map=trans_map,
+        output_pptx_path=out_path,
+        auto_fit=auto_fit,
+        target_script=target_script
+    )
+
+    safe_ascii = re.sub(r'[^\w\s.-]', '', out_filename)
+    if not safe_ascii.lower().endswith(".pptx"):
+        safe_ascii += ".pptx"
+    enc = urllib.parse.quote(out_filename)
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{safe_ascii}"; filename*=UTF-8\'\'{enc}',
+        "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    }
+    if stats.get("failed", 0) > 0:
+        headers["X-Translation-Warning"] = f"{stats['failed']}/{stats.get('total', 0)} ta matn tarjima qilinmadi"
+
+    return FileResponse(out_path, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers=headers, filename=safe_ascii)
 
 dist = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(dist):

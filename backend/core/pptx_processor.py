@@ -24,7 +24,7 @@ class PPTXProcessor:
         r"slidesgo", r"poweredtemplate", r"slidemodel", r"designed with",
         r"free templates?", r"questions or need help", r"visit our faq",
         r"更多精品", r"ppt模板", r"ppt背景", r"by:\s*", r"\.com",
-        r"51ppt", r"优品ppt"
+        r"51ppt", r"优品ppt", r"free-powerpoint-templates-design", r"freeppt"
     ]
 
     AD_SLIDE_PATTERNS = [
@@ -73,8 +73,11 @@ class PPTXProcessor:
         return False
 
     @staticmethod
-    def _is_ad_slide(slide) -> bool:
+    def _is_ad_slide(slide, slide_index: int = 2) -> bool:
         """Taqdimot oxiridagi SlidesCarnival/Slidesgo/Freepik reklama va minnatdorchilik slaydlarini aniqlash."""
+        # Birinchi slayd (muqova/titul) hech qachon reklama slaydi sifatida o'chirilmaydi
+        if slide_index <= 1:
+            return False
         texts = []
         for sh in slide.shapes:
             if sh.has_text_frame:
@@ -105,11 +108,11 @@ class PPTXProcessor:
     def clean_presentation_watermarks(prs: Presentation) -> int:
         removed = 0
         
-        # 1. Taqdimot oxiridagi barcha reklama/minnatdorchilik slaydlarini to'liq o'chirish
+        # 1. Taqdimot oxiridagi barcha reklama/minnatdorchilik slaydlarini to'liq o'chirish (birinchi slayd o'chirilmaydi)
         slide_count = len(prs.slides)
-        for s_idx in range(slide_count - 1, -1, -1):
+        for s_idx in range(slide_count - 1, 0, -1):
             slide = prs.slides[s_idx]
-            if PPTXProcessor._is_ad_slide(slide):
+            if PPTXProcessor._is_ad_slide(slide, slide_index=s_idx + 1):
                 PPTXProcessor._delete_slide(prs, s_idx)
                 removed += 1
 
@@ -214,7 +217,7 @@ class PPTXProcessor:
         slide_height = prs.slide_height
 
         for s_idx, slide in enumerate(prs.slides, start=1):
-            if PPTXProcessor._is_ad_slide(slide):
+            if PPTXProcessor._is_ad_slide(slide, slide_index=s_idx):
                 continue
             slide_items = []
             PPTXProcessor._extract_shapes_recursive(

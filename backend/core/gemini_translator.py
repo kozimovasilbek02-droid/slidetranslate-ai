@@ -1,105 +1,184 @@
 # -*- coding: utf-8 -*-
+"""
+backend.core.gemini_translator
+------------------------------
+Google Gemini orqali slayd matnlarini yuqori aniqlikda, sohaviy kontekst,
+anti-overflow va parallel batch tarzda tarjima qiluvchi modul.
+"""
+from __future__ import annotations
+
 import os
 import json
 import re
 import time
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional
+
 from google import genai
 from google.genai import types
 
-from backend.core.transliteration import ensure_script
+from backend.core.transliteration import ensure_script, latin_to_cyrillic
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
+FALLBACK_MODELS = [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+]
 
 def sanitize_text(text: str) -> str:
+    """Boshqaruv belgilari va OpenXML artefaktlarini tozalaydi, probellarni saqlaydi."""
     if not text:
         return ""
+    # _x000B_ va boshqaruv belgilarini probel bilan almashtiramiz (so'zlar yopishib qolmasligi uchun)
     t = re.sub(r'_x[0-9a-fA-F]{4}_', ' ', text)
     t = re.sub(r'[\u0001-\u0008\u000b\u000c\u000e-\u001f\u007f]', ' ', t)
     t = re.sub(r'[ \t]+', ' ', t)
     return t.strip()
 
+
+class TranslationError(RuntimeError):
+    """Tarjima xizmati xatolik qaytarganda."""
+
+
 class GeminiTranslator:
+    """
+    Taqdimot matnlarini kontekst, terminologiya va slayd tuzilmasini saqlagan holda
+    tarjima qiluvchi yuqori aniqlikdagi AI tarjimon dvigateli.
+    """
+
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        self.api_key = (
+            api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY", "")
+        )
         self.client = genai.Client(api_key=self.api_key) if self.api_key else genai.Client()
-        self.model_candidates = [
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-3.6-flash",
-            "gemini-3.1-pro-preview"
-        ]
-        self.model_name = model_name or os.environ.get("GEMINI_MODEL") or self.model_candidates[0]
+        self.model_candidates = [model_name] if model_name else list(FALLBACK_MODELS)
+        self.model_name = self.model_candidates[0]
 
     def translate_items_batch(
         self,
         items: List[Dict[str, Any]],
         target_script: str = "latin",
         domain: str = "general",
-        glossary: Optional[Dict[str, str]] = None
+        glossary: Optional[Dict[str, str]] = None,
+        stats: Optional[Dict[str, Any]] = None,
+        batch_size: int = 35,
+        max_workers: int = 4,
     ) -> List[Dict[str, Any]]:
+        """
+        Slayd elementlari ro'yxatini parallel batch tarzda tarjima qiladi.
+        items: [{"id": "s1_sh0_p0", "text": "Strategic Vision", ...}, ...]
+        """
         if not items:
+            if stats is not None:
+                stats.update(total=0, failed=0, failed_ids=[])
             return []
 
-        sub_batch_size = 35
-        batches = [items[i:i + sub_batch_size] for i in range(0, len(items), sub_batch_size)]
-        
+        batches = [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+
         if len(batches) == 1:
-            return self._translate_single_batch(batches[0], target_script, domain, glossary)
-        
-        results = []
-        with ThreadPoolExecutor(max_workers=min(4, len(batches))) as executor:
-            future_to_batch = {
-                executor.submit(self._translate_single_batch, b, target_script, domain, glossary): b
-                for b in batches
-            }
-            for future in as_completed(future_to_batch):
-                try:
-                    res = future.result()
-                    results.extend(res)
-                except Exception:
+            results = self._translate_single_batch(batches[0], target_script, domain, glossary)
+        else:
+            results = []
+            workers = min(max_workers, len(batches))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                future_to_batch = {
+                    executor.submit(self._translate_single_batch, b, target_script, domain, glossary): b
+                    for b in batches
+                }
+                for future in as_completed(future_to_batch):
                     b = future_to_batch[future]
-                    results.extend([{"id": it["id"], "translated_text": sanitize_text(it["original_text"])} for it in b])
+                    try:
+                        res = future.result()
+                        results.extend(res)
+                    except Exception as exc:
+                        logger.error("Batch tarjima xatosi: %s", exc)
+                        for it in b:
+                            orig = it.get("original_text") or it.get("text", "")
+                            results.append({"id": it["id"], "translated_text": sanitize_text(orig)})
 
         order_map = {it["id"]: it for it in results}
-        return [order_map.get(it["id"], {"id": it["id"], "translated_text": sanitize_text(it["original_text"])}) for it in items]
+        ordered_results = []
+        failed_ids = []
+
+        for it in items:
+            orig = sanitize_text(it.get("original_text") or it.get("text", ""))
+            matched = order_map.get(it["id"])
+            if matched:
+                tr_text = matched.get("translated_text", "")
+                if not tr_text or tr_text.strip() == orig.strip():
+                    # Matn tarjima qilinmagan bo'lishi mumkin (masalan qisqa nomlar bundan mustasno)
+                    pass
+                ordered_results.append(matched)
+            else:
+                ordered_results.append({"id": it["id"], "translated_text": orig})
+                failed_ids.append(it["id"])
+
+        if stats is not None:
+            stats.update(total=len(items), failed=len(failed_ids), failed_ids=failed_ids)
+
+        return ordered_results
 
     def _translate_single_batch(
         self,
         items: List[Dict[str, Any]],
         target_script: str = "latin",
         domain: str = "general",
-        glossary: Optional[Dict[str, str]] = None
+        glossary: Optional[Dict[str, str]] = None,
+        max_retries: int = 5,
     ) -> List[Dict[str, Any]]:
-        script_name = "O'zbek tili (Lotin yozuvi)" if target_script.lower() == "latin" else "Ўзбек тили (Кирилл ёзуви)"
-        
+        is_cyrillic = target_script.lower() in ["cyrillic", "kirill", "uz-cyrl", "ўзбекча"]
+        script_name = "O'zbek tili (Lotin yozuvi)" if not is_cyrillic else "Ўзбек тили (Кирилл ёзуви)"
+
         glossary_instructions = ""
         if glossary:
-            terms = ", ".join([f"{k} => {v}" for k, v in glossary.items()])
-            glossary_instructions = f"Maxsus lug'at atamalari: {terms}"
+            terms = "; ".join([f"'{k}' => '{v}'" for k, v in glossary.items()])
+            glossary_instructions = f"\nMUHIM QOIDA - Maxsus atamalar lug'atiga qat'iy amal qiling:\n{terms}\n"
 
-        system_instruction = f"""Siz professional PowerPoint taqdimotlari tarjimonisiz.
-Vazifangiz taqdimot matnlarini {script_name}ga professional, ravon va slayd ramkalariga sig'adigan darajada IXCHAM tarjima qilishdir.
+        system_instruction = f"""Siz professional xalqaro PowerPoint taqdimotlari bo'yicha ekspert AI tarjimonsiz.
+Vazifangiz berilgan slayd matnlarini {script_name}ga professional, ravon va slayd ramkalariga sig'adigan darajada IXCHAM tarjima qilishdir.
+
+Soha / Kontekst: {domain}
+{glossary_instructions}
 
 QAT'IY QOIDALAR:
-1. DIAGRAMMA VA SHAKL SARLAVHALARI (O'TA IXCHAM BO'LSIN):
-   - '添加标题文本' / '添加标题' / '在此添加标题' => 'Sarlavha' (yoki 'Mavzu') - hech qachon 'Sarlavha matnini qo'shing' deb 3 qatorga cho'zmang!
-   - '根据自己的需要添加适当的文字...' => 'Bu yerga qisqacha tavsif matni kiritiladi.'
-   - '目录' / 'CONTENTS' => 'Mundarija'
-   - 'Work report' / '汇报完毕' => 'Ish hisoboti' / 'E\'tiboringiz uchun rahmat'
-2. LOREM IPSUM VA SHABLON MATNLAR:
-   - 'Lorem Ipsum' => '1-bosqich' (yoki 'Namuna sarlavhasi')
-   - 'Lorem ipsum dolor sit amet...' => 'Bu yerga loyihangizning qisqacha tavsifi, asosiy vazifalar yoki maqsadlar yoziladi.'
-3. IXCHAMLIK (ANTI-OVERFLOW): Matnlar slayd shakllaridan toshib ketmasligi uchun cho'zilgan so'zlardan qoching.
-4. Boshqaruv belgilari (_x000B_, \\v, \\r) va ortiqcha probellarni tozalang.
-5. Kiruvchi JSON massividagi har bir element uchun 'id' va 'translated' kalitlari bilan JSON massiv qaytaring.
-{glossary_instructions}
+1. HAR BIR INGLIZCHA MATNNI O'ZBEK TILIGA O'GIRING:
+   - "Renaissance Genius" => "Uyg'onish davri dahosi"
+   - "The Last Supper" => "So'nggi kecha"
+   - "Mona Lisa" => "Mona Liza"
+   - "Codex Leicester" => "Lester kodeksi"
+   - "Passing on the Torch" => "Merosni davom ettirish" (ma'nosiga qarab)
+   - "Vitruvian Man" => "Vitruviy odami"
+   - "Executive Summary" => "Rahbarlik uchun xulosa"
+   - "Contents" / "Table of contents" => "Mundarija"
+   - "Work Report" => "Ish hisoboti"
+2. IXCHAMLIK (ANTI-OVERFLOW):
+   - Slayd bloklaridan toshib ketmasligi uchun cho'zilgan jumlalardan qoching.
+   - Sarlavhalarni lo'nda va ixcham saqlang.
+3. SONLAR, FOIZLAR, FORMULALAR:
+   - Raqamlar, yillar (masalan: 1452-1519), foizlar va maxsus belgilarni o'zgartirmang.
+4. TOZALASH:
+   - Boshqaruv belgilarini (_x000B_, \\v, \\r) va ortiqcha probellarni tozalang.
+5. JAVOB FORMATI:
+   - Kiruvchi JSON massividagi har bir element uchun 'id' va 'translated' kalitlari bilan JSON massiv qaytaring.
 """
 
-        prompt_payload = [{"id": it["id"], "text": sanitize_text(it["original_text"])} for it in items]
+        prompt_payload = [
+            {"id": it["id"], "text": sanitize_text(it.get("original_text") or it.get("text", ""))}
+            for it in items
+        ]
         user_content = json.dumps(prompt_payload, ensure_ascii=False, indent=2)
 
-        result_map = {}
-        for attempt in range(len(self.model_candidates)):
+        result_map: Dict[str, str] = {}
+        last_exception = None
+
+        for attempt in range(max_retries):
             cur_model = self.model_candidates[attempt % len(self.model_candidates)]
             try:
                 response = self.client.models.generate_content(
@@ -120,38 +199,52 @@ QAT'IY QOIDALAR:
                 if isinstance(parsed, list):
                     for row in parsed:
                         if isinstance(row, dict) and "id" in row:
-                            t_val = row.get("translated") or row.get("translated_text") or row.get("text") or row.get("uzbek") or ""
-                            result_map[row["id"]] = ensure_script(sanitize_text(t_val), target_script)
+                            t_val = row.get("translated") or row.get("translated_text") or row.get("text") or ""
+                            clean_t = sanitize_text(t_val)
+                            # Kirill kerak bo'lsa transliteratsiya bilan mustahkamlash
+                            if is_cyrillic:
+                                clean_t = ensure_script(clean_t, "cyrillic")
+                            result_map[row["id"]] = clean_t
                 if result_map:
                     break
             except Exception as e:
-                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                    time.sleep(3.0 * (attempt + 1))
-                else:
-                    time.sleep(1.0 * (attempt + 1))
+                last_exception = e
+                wait_sec = 1.5 * (2 ** attempt)
+                logger.warning("Gemini chaqiruvi muvaffaqiyatsiz (urinish %d/%d): %s. Kutish: %.1fs",
+                               attempt + 1, max_retries, e, wait_sec)
+                time.sleep(wait_sec)
 
-        # Fill missing items via fallback translator
+        # Muvaffaqiyatsiz bo'lgan elementlar uchun zaxira (fallback)
         results = []
         for it in items:
             item_id = it["id"]
+            orig = sanitize_text(it.get("original_text") or it.get("text", ""))
             if item_id in result_map and result_map[item_id].strip():
                 results.append({"id": item_id, "translated_text": result_map[item_id]})
             else:
+                # Zaxira: deep_translator yoki asl matn
+                tr = ""
                 try:
                     from deep_translator import GoogleTranslator
                     gt = GoogleTranslator(source="auto", target="uz")
-                    orig = sanitize_text(it["original_text"])
                     tr = gt.translate(orig) if orig else ""
-                    results.append({"id": item_id, "translated_text": ensure_script(sanitize_text(tr or orig), target_script)})
                 except Exception:
-                    results.append({"id": item_id, "translated_text": sanitize_text(it["original_text"])})
+                    pass
+                val = tr or orig
+                if is_cyrillic:
+                    val = ensure_script(val, "cyrillic")
+                results.append({"id": item_id, "translated_text": sanitize_text(val)})
 
         return results
+
     def translate_single_text(self, text: str, target_script: str = "latin") -> str:
+        """Yagona satrni (masalan fayl sarlavhasini) toza o'zbek tiliga o'giradi."""
         if not text or not text.strip():
             return "Taqdimot"
-        script_name = "O'zbek tili (Lotin yozuvi)" if target_script.lower() == "latin" else "Ўзбек тили (Кирилл ёзуви)"
+        is_cyrillic = target_script.lower() in ["cyrillic", "kirill", "uz-cyrl", "ўзбекча"]
+        script_name = "O'zbek tili (Lotin yozuvi)" if not is_cyrillic else "Ўзбек тили (Кирилл ёзуви)"
         clean_in = sanitize_text(text)
+
         prompt = f"""Fayl sarlavhasini {script_name}ga qisqa, toza va professional tarjima qiling.
 QOIDALAR:
 1. FAQAT tarjima qilingan nomni qaytaring.
@@ -159,6 +252,7 @@ QOIDALAR:
 3. '_' (pastki chiziq) ishlatmang, so'zlar orasida probel bo'lsin.
 
 Matn: "{clean_in}\""""
+
         for model in self.model_candidates:
             try:
                 res = self.client.models.generate_content(
@@ -170,11 +264,11 @@ Matn: "{clean_in}\""""
                 out = re.sub(r'[/\\:*?"<>|_]', ' ', out)
                 out = re.sub(r'\s+', ' ', out).strip()
                 if out:
-                    return out
+                    return ensure_script(out, target_script) if is_cyrillic else out
             except Exception:
                 continue
 
-        # Fallback to deep_translator
+        # Zaxira (fallback)
         try:
             from deep_translator import GoogleTranslator
             gt = GoogleTranslator(source='auto', target='uz')
@@ -182,7 +276,6 @@ Matn: "{clean_in}\""""
             out = re.sub(r'(\s*[-_]?\s*(tarjima|ozbekcha|ўзбекча)[a-z]*)$', '', tr, flags=re.IGNORECASE)
             out = re.sub(r'[/\\:*?"<>|_]', ' ', out)
             out = re.sub(r'\s+', ' ', out).strip()
-            return out if out else clean_in
+            return ensure_script(out, target_script) if (out and is_cyrillic) else (out or clean_in)
         except Exception:
             return clean_in
-
