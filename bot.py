@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 import sys
 
@@ -476,29 +476,27 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             target_script=target_script
         )
 
-        # 6. Generate Slide 1 preview image and thumbnail for Telegram
-        preview_img_path = os.path.join(EXPORTS_DIR, f"{session_id}_preview.jpg")
+        # 6. Generate 2-3 Slide preview images and thumbnail for Telegram
+        preview_imgs = await asyncio.to_thread(
+            ThumbnailGenerator.export_presentation_previews,
+            out_path,
+            EXPORTS_DIR,
+            3
+        )
+
         thumb_320_path = os.path.join(EXPORTS_DIR, f"{session_id}_thumb320.jpg")
-        has_preview = False
-        try:
-            has_preview = await asyncio.to_thread(
-                ThumbnailGenerator.export_slide_preview,
-                out_path,
-                preview_img_path,
-                1920,
-                1080
-            )
-            if has_preview and os.path.exists(preview_img_path):
+        if preview_imgs and os.path.exists(preview_imgs[0]):
+            try:
                 from PIL import Image
-                with Image.open(preview_img_path) as im:
+                with Image.open(preview_imgs[0]) as im:
                     im_thumb = im.copy()
                     im_thumb.thumbnail((320, 320))
                     im_thumb.save(thumb_320_path, "JPEG", quality=85)
-        except Exception as te:
-            logger.warning(f"Preview generatsiyasida xatolik: {te}")
+            except Exception:
+                pass
 
         # 7. Edit status and send translated document with preview
-        await status_msg.edit_text("✅ <b>Tarjima tayyor! Fayl yuborilmoqda...</b>", parse_mode="HTML")
+        await status_msg.edit_text("✅ <b>Tarjima tayyor! Slaydlar yuborilmoqda...</b>", parse_mode="HTML")
 
         caption = (
             f"🎉 <b>Taqdimotingiz muvaffaqiyatli tarjima qilindi!</b>\n\n"
@@ -513,10 +511,20 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         input_file = FSInputFile(path=out_path, filename=out_filename)
         tg_thumb = FSInputFile(path=thumb_320_path) if os.path.exists(thumb_320_path) else None
 
-        # Send photo preview first if available
-        if has_preview and os.path.exists(preview_img_path):
+        # 8. Send multi-slide preview album (Media Group) if 2-3 slides available
+        if preview_imgs and len(preview_imgs) > 1:
+            from aiogram.types import InputMediaPhoto
+            media_group = []
+            for idx, p_path in enumerate(preview_imgs, 1):
+                cap = f"🖼 <b>{idx}-slayd ko'rinishi (Preview)</b>\n📁 <code>{out_filename}</code>" if idx == 1 else f"🖼 <b>{idx}-slayd ko'rinishi</b>"
+                media_group.append(InputMediaPhoto(media=FSInputFile(p_path), caption=cap, parse_mode="HTML"))
             try:
-                photo_file = FSInputFile(path=preview_img_path)
+                await msg.reply_media_group(media=media_group)
+            except Exception as pe:
+                logger.warning(f"Media group yuborishda xatolik: {pe}")
+        elif preview_imgs and len(preview_imgs) == 1:
+            try:
+                photo_file = FSInputFile(path=preview_imgs[0])
                 await msg.reply_photo(
                     photo=photo_file,
                     caption=f"🖼 <b>1-slayd ko'rinishi (Preview):</b>\n📁 <code>{out_filename}</code>",

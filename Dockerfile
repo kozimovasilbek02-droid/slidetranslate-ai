@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     libxml2-dev \
     libxslt1-dev \
+    libreoffice-impress-nogui \
+    fonts-dejavu-core \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python requirements
