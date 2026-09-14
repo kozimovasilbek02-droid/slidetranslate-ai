@@ -385,7 +385,30 @@ async def handle_presentation_document(msg: Message, bot: Bot):
     fname = doc.file_name or "presentation.pptx"
     
     if not fname.lower().endswith((".pptx", ".potx")):
-        await msg.reply("❌ <b>Xatolik:</b> Iltimos, faqat PowerPoint (<b>.pptx</b>) fayllarini yuboring!", parse_mode="HTML")
+        ext = os.path.splitext(fname)[1].lower()
+        display_ext = ext if ext else "nomalum"
+        await msg.reply(
+            f"⚠️ <b>Qo'llab-quvvatlanmaydigan fayl formati ({display_ext})!</b>\n\n"
+            f"Ushbu bot faqat PowerPoint taqdimotlari (<b>.pptx</b>) bilan ishlaydi.\n\n"
+            f"📋 <b>Qabul qilinadigan formatlar:</b>\n"
+            f"• <code>.pptx</code> (PowerPoint taqdimoti)\n"
+            f"• <code>.potx</code> (PowerPoint andozasi/shabloni)\n\n"
+            f"💡 <i>Agar faylingiz PDF, Word yoki boshqa formatda bo'lsa, uni avval PowerPoint (.pptx) ga o'giring va qayta yuboring.</i>",
+            parse_mode="HTML"
+        )
+        return
+
+    # File size limit verification (Telegram Bot API has 20 MB limit for getFile)
+    if doc.file_size and doc.file_size > 20 * 1024 * 1024:
+        size_mb = doc.file_size / (1024 * 1024)
+        await msg.reply(
+            f"⚠️ <b>Taqdimot hajmi juda katta ({size_mb:.1f} MB)!</b>\n\n"
+            f"Telegram botlari orqali maksimal <b>20 MB</b> gacha bo'lgan fayllarni qabul qila olamiz.\n\n"
+            f"💡 <b>Yechim:</b>\n"
+            f"1. PowerPoint dasturida rasmlar hajmini siqib (<i>File ➔ Compress Pictures</i>) qayta saqlang;\n"
+            f"2. Yoki katta taqdimotlarni to'g'ridan-to'g'ri veb-saytimiz orqali tarjima qiling: <b>https://slidetranslate-ai.onrender.com</b>",
+            parse_mode="HTML"
+        )
         return
 
     user_id = msg.from_user.id
@@ -543,6 +566,60 @@ async def handle_presentation_document(msg: Message, bot: Bot):
     except Exception as e:
         logger.error(f"Xatolik yuz berdi: {e}", exc_info=True)
         await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
+
+# Photo / Screenshot Handler
+@dp.message(F.photo)
+async def handle_photo_message(msg: Message):
+    await msg.reply(
+        "📸 <b>Skrinshot yoki rasm qabul qilinmaydi!</b>\n\n"
+        "Bot taqdimot ichidagi barcha slaydlarni, rang-barang shakllarni va <b>130+ shriftlarni</b> "
+        "100% asl sifatda saqlashi uchun rasm emas, asl <b>PowerPoint (.pptx)</b> faylini yuborishingiz zarur.\n\n"
+        "📁 <b>Taqdimotni qanday yuborish kerak?</b>\n"
+        "1. Telegramda 📎 (qisqich) belgisini bosing;\n"
+        "2. <b>Fayl (File / Document)</b> bo'limini tanlang;\n"
+        "3. Qurilmangizdagi <code>.pptx</code> faylini tanlab yuboring.\n\n"
+        "⚖️ <b>Cheklov:</b> Telegram orqali maksimal <b>20 MB</b> gacha.",
+        parse_mode="HTML"
+    )
+
+# Voice & Audio Handler
+@dp.message(F.voice | F.audio)
+async def handle_audio_message(msg: Message):
+    await msg.reply(
+        "🎙 <b>Ovozli xabarlar qabul qilinmaydi!</b>\n\n"
+        "Ushbu bot faqat PowerPoint taqdimotlarini (<b>.pptx</b>) O'zbek tiliga tarjima qiladi.\n"
+        "Iltimos, taqdimot faylingizni <b>Fayl (Document)</b> sifatida yuboring (maksimal 20 MB).",
+        parse_mode="HTML"
+    )
+
+# Video Handler
+@dp.message(F.video | F.video_note)
+async def handle_video_message(msg: Message):
+    await msg.reply(
+        "🎬 <b>Video fayllar qabul qilinmaydi!</b>\n\n"
+        "Bot faqat PowerPoint taqdimotlari (<b>.pptx</b>) bilan ishlaydi.\n"
+        "Iltimos, taqdimot faylingizni <b>Hujjat (File)</b> ko'rinishida yuboring.",
+        parse_mode="HTML"
+    )
+
+# Sticker Handler
+@dp.message(F.sticker)
+async def handle_sticker_message(msg: Message):
+    await msg.reply(
+        "😊 <b>Taqdimotni tarjima qilish uchun menga .pptx fayl yuboring!</b>\n\n"
+        "📎 Telegram orqali <code>.pptx</code> formatidagi PowerPoint faylini yuborsangiz, "
+        "bot barcha slaydlarni O'zbek tiliga professional tarjima qilib beradi (maksimal 20 MB).",
+        parse_mode="HTML"
+    )
+
+# Fallback for any other unhandled media types (e.g. location, contact, poll)
+@dp.message(~F.text & ~F.document & ~F.photo & ~F.voice & ~F.audio & ~F.video & ~F.video_note & ~F.sticker)
+async def handle_unknown_content(msg: Message):
+    await msg.reply(
+        "⚠️ <b>Bu turdagi xabarlar qo'llab-quvvatlanmaydi.</b>\n\n"
+        "Iltimos, faqat PowerPoint (<b>.pptx</b>) taqdimot fayllarini yuboring (maksimal 20 MB).",
+        parse_mode="HTML"
+    )
 
 def get_bot_mode() -> str:
     mode = os.environ.get("BOT_MODE", "").lower().strip()
