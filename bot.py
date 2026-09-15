@@ -214,6 +214,17 @@ async def cmd_set_key(msg: Message):
     parts = msg.text.split(maxsplit=1)
     if len(parts) > 1:
         new_key = parts[1].strip()
+        if not new_key.startswith("AIzaSy"):
+            await msg.reply(
+                f"❌ <b>Noto'g'ri Gemini API kaliti!</b>\n\n"
+                f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi.\n"
+                f"Siz kiritgan kalit (<code>{new_key[:12]}...</code>) noto'g'ri yoki boshqa tizim kaliti.\n\n"
+                f"👉 <b>Bepul Gemini API kaliti olish (1 daqiqa):</b>\n"
+                f"<a href='https://aistudio.google.com/app/apikey'>https://aistudio.google.com/app/apikey</a>",
+                parse_mode="HTML",
+                disable_web_page_preview=True
+            )
+            return
         set_user_api_key(msg.from_user.id, new_key)
         await msg.reply(
             "✅ <b>Gemini API kalitingiz muvaffaqiyatli saqlandi!</b>\n"
@@ -291,6 +302,16 @@ async def handle_text_key_input(msg: Message):
             "Endi botdan cheklovlarsiz foydalanishingiz mumkin. Menga istalgan <b>.pptx</b> taqdimot faylini yuboring!",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(msg.from_user.id)
+        )
+    elif len(text) >= 25 and not text.startswith("AIzaSy"):
+        await msg.reply(
+            f"❌ <b>Noto'g'ri Gemini API kaliti!</b>\n\n"
+            f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi.\n"
+            f"Siz kiritgan text (<code>{text[:14]}...</code>) noto'g'ri yoki boshqa tizim kaliti.\n\n"
+            f"👉 <b>Bepul Gemini API kaliti olish (1 daqiqa):</b>\n"
+            f"<a href='https://aistudio.google.com/app/apikey'>https://aistudio.google.com/app/apikey</a>",
+            parse_mode="HTML",
+            disable_web_page_preview=True
         )
     else:
         await msg.reply(
@@ -467,18 +488,36 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         translator = GeminiTranslator(api_key=user_key)
         all_items = [it for s in data["slides"] for it in s.get("items", [])]
         
-        batch_size = 75
+        batch_size = 60
         translations_map = {}
+        total_batches = (len(all_items) + batch_size - 1) // batch_size
         
-        def run_translation():
-            for i in range(0, len(all_items), batch_size):
+        async def run_translation_with_progress():
+            loop = asyncio.get_running_loop()
+            for b_idx, i in enumerate(range(0, len(all_items), batch_size), 1):
                 batch = all_items[i:i + batch_size]
-                res = translator.translate_items_batch(batch, target_script=target_script, domain=domain)
+                pct = int((b_idx / total_batches) * 100)
+                try:
+                    await status_msg.edit_text(
+                        f"⚡ <b>Tarjima qilinmoqda: {b_idx}/{total_batches} bosqich ({pct}%)...</b>\n"
+                        f"📊 Slaydlar: <b>{slides_count} ta</b> | Matnlar: <b>{total_items} ta</b>\n"
+                        f"• Soha: <b>{domain}</b> | Yozuv: <b>{'Lotin' if target_script == 'latin' else 'Кирилл'}</b>",
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+                
+                res = await loop.run_in_executor(
+                    None,
+                    translator.translate_items_batch,
+                    batch,
+                    target_script,
+                    domain
+                )
                 for r in res:
                     translations_map[r["id"]] = r["translated_text"]
-            return translations_map
 
-        await asyncio.to_thread(run_translation)
+        await run_translation_with_progress()
 
         # 4. Generate Clean Title
         clean_title = await asyncio.to_thread(translate_clean_filename, fname, translator, target_script)
