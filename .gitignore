@@ -23,5 +23,32 @@ temp_sessions/*
 .DS_Store
 Thumbs.db
 
+# Secrets
 .env
 .env.*
+
+# Temporary / Test artifacts & outputs
+Ozbekcha_Taqdimotlar/
+batch_outputs/
+generated_presentations/
+test_artifacts/
+gamma_slides_img/
+rich_slides_img/
+html_slides/
+.claude/
+test_*.py
+verify_*.py
+analyze_*.py
+run_*.py
+retranslate.py
+inspect_*.py
+gen_*.py
+generate_*.py
+build_*.py
+ai_coder.py
+translate_porter.py
+update_bot.py
+render_test.py
+*.jpg
+*.png
+!bot_logo.jpg

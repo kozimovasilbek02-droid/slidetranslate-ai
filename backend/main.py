@@ -74,13 +74,61 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SlideTranslate AI", version="2.0.0", lifespan=lifespan)
 
+def _get_allowed_origins() -> list[str]:
+    """Cheklangan CORS originlar — wildcard o'rniga aniq ro'yxat.
+
+    - Mahalliy dev: localhost / 127.0.0.1 (Vite / CRA / FastAPI dev serverlari)
+    - Production: ALLOWED_ORIGINS env var (vergul bilan ajratilgan) yoki
+      RENDER_EXTERNAL_URL / WEBHOOK_URL dan avtomatik aniqlanadi.
+    """
+    # 1. Aniq vergul bilan ajratilgan ro'yxat — production uchun tavsiya etiladi
+    #    Masalan: ALLOWED_ORIGINS=https://slidetranslate-ai.onrender.com,https://yourdomain.com
+    raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if raw:
+        return [o.strip().rstrip("/") for o in raw.split(",") if o.strip()]
+
+    origins: list[str] = []
+
+    # 2. Production URL env varlardan avtomatik
+    for key in ("RENDER_EXTERNAL_URL", "WEBHOOK_URL", "FRONTEND_URL"):
+        val = os.getenv(key, "").strip().rstrip("/")
+        if val and val not in origins:
+            origins.append(val)
+
+    # 3. Local dev originlar — faqat ENV != production bo'lganda qo'shiladi
+    env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+    if env in ("development", "dev", "local", ""):
+        origins.extend([
+            "http://localhost:3000",   # CRA / Next.js default
+            "http://localhost:5173",   # Vite default
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://localhost:8000",   # FastAPI docs / local backend
+            "http://127.0.0.1:8000",
+        ])
+
+    # Fallback — env varlar o'rnatilmagan production holati uchun
+    if not origins:
+        origins = ["https://slidetranslate-ai.onrender.com"]
+
+    # Takrorlarni olib tashlash, tartibni saqlash
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for o in origins:
+        if o not in seen:
+            seen.add(o)
+            deduped.append(o)
+    return deduped
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_get_allowed_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"],
     expose_headers=["Content-Disposition", "X-Translation-Warning", "X-Font-Warning"],
+    max_age=600,
 )
 
 @app.api_route("/", methods=["GET", "HEAD"])
