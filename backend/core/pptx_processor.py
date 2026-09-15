@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from pptx import Presentation
 from pptx.util import Pt, Inches
 from pptx.enum.shapes import MSO_SHAPE_TYPE
-from pptx.enum.text import MSO_ANCHOR
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 
 def safe_load_presentation(pptx_path: str) -> Presentation:
     """
@@ -100,8 +100,17 @@ class PPTXProcessor:
     def _is_watermark_recursive(shape, depth: int = 0, max_depth: int = 10) -> bool:
         if depth >= max_depth:
             return False
+        # 1. Matnli reklama tekshiruvi
         if shape.has_text_frame and PPTXProcessor._is_watermark_text(shape.text_frame.text):
             return True
+        # 2. XML tekshiruvi (Group, Picture descr, r:embed havolalar va logo rasmlari)
+        try:
+            xml = shape._element.xml
+            if re.search(r"(allppt|free-powerpoint-templates|presentationgo|slidesgo|slidestime|slidegeeks|templatewise|slideteam|poweredtemplate)", xml, re.I):
+                return True
+        except Exception:
+            pass
+        # 3. Guruh ichidagi shakllarni rekursiv tekshirish
         if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
             try:
                 for sub in shape.shapes:
@@ -216,13 +225,14 @@ class PPTXProcessor:
         # 3. Clean Slide Level Watermarks, Corner Logo Badges and Footer Links
         for s_idx, slide in enumerate(prs.slides, 1):
             for sh in list(slide.shapes):
-                # 1-slaydda sarlavha qutilari (Title / Title Placeholder) butunlay o'chirilmasligi kerak!
-                if s_idx == 1 and sh.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER:
-                    txt = sh.text_frame.text.strip().lower() if sh.has_text_frame else ""
-                    if any(p in txt for p in ["title", "free ppt", "click to edit"]):
+                # 1-slaydda asosiy sarlavha (Title / Title Placeholder) va sarlavha osti qutilari o'chirilmasligi kerak!
+                # ALLPPT kabi shablonlarda 1-slayddagi sarlavha 'Free PPT Templates' yoki 'Insert the title' deb yozilgan bo'ladi.
+                if s_idx == 1 and sh.has_text_frame and (sh.width or 0) >= sw * 0.35:
+                    txt = sh.text_frame.text.strip().lower()
+                    if not any(u in txt for u in ["http://", "https://", "www.allppt"]):
                         continue
 
-                # A. Recursive matnli reklama tekshiruvi
+                # A. Har tomonlama reklama va watermark tekshiruvi (matn, XML, descr, logo rasmlari, guruhlar)
                 if PPTXProcessor._is_watermark_recursive(sh):
                     try:
                         sh._element.getparent().remove(sh._element)
@@ -242,10 +252,10 @@ class PPTXProcessor:
                                 sh._element.getparent().remove(sh._element)
                                 removed += 1
                                 continue
-                        # Pastki footer watermark / link (T > 90%, H < 10%)
-                        if t > sh_h * 0.90 and h < sh_h * 0.10:
+                        # Pastki footer watermark / link / logo badge (T > 88%, H < 12%)
+                        if t > sh_h * 0.88 and h < sh_h * 0.12:
                             txt = sh.text_frame.text.strip().lower() if sh.has_text_frame else ""
-                            if any(p in txt for p in ["http", "www", "free", "allppt", "template", "design", ".com"]):
+                            if any(p in txt for p in ["http", "www", "free", "allppt", "template", "design", ".com"]) or (w < sw * 0.40 and (not txt or "allppt" in sh._element.xml.lower())):
                                 sh._element.getparent().remove(sh._element)
                                 removed += 1
                                 continue
@@ -504,33 +514,56 @@ class PPTXProcessor:
         # 1-slayd sarlavhasini kafolatlash (agar shablon sarlavhasiz yoki placeholder bo'lsa)
         if len(prs.slides) > 0 and presentation_title:
             s1 = prs.slides[0]
-            title_sh = None
-            sub_sh = None
+            sw = prs.slide_width
+            
+            # Keng matn qutilarini topish (kengligi kamida slaydning 35% qismini egallagan)
+            candidates = []
             for sh in s1.shapes:
-                if sh.has_text_frame:
-                    t = sh.text_frame.text.strip().lower()
-                    if any(k in t for k in ["click to edit", "free ppt", "insert the title", "your presentation title", "taqdimot", "fransuzcha", "burger"]):
-                        if not title_sh:
-                            title_sh = sh
-                    elif any(k in t for k in ["subtitle", "quyi sarlavha", "pastki sarlavha", "materiali"]):
-                        sub_sh = sh
-
-            if not title_sh:
+                if sh.has_text_frame and (sh.width or 0) >= sw * 0.35:
+                    candidates.append((sh.top or 0, sh))
+            
+            candidates.sort(key=lambda x: x[0])
+            
+            if candidates:
+                # 1-kandidat: Asosiy sarlavha (Title)
+                title_sh = candidates[0][1]
+                if title_sh.text_frame.paragraphs:
+                    p_title = title_sh.text_frame.paragraphs[0]
+                    if p_title.runs:
+                        p_title.runs[0].text = presentation_title
+                        for r in p_title.runs[1:]:
+                            r.text = ""
+                        p_title.runs[0].font.size = Pt(38) if len(presentation_title) > 30 else Pt(44)
+                        p_title.runs[0].font.bold = True
+                    else:
+                        p_title.text = presentation_title
+                        p_title.font.size = Pt(38) if len(presentation_title) > 30 else Pt(44)
+                        p_title.font.bold = True
+                    p_title.alignment = PP_ALIGN.CENTER
+                
+                # 2-kandidat: Sarlavha osti (Subtitle)
+                if len(candidates) >= 2:
+                    sub_sh = candidates[1][1]
+                    if sub_sh.text_frame.paragraphs:
+                        p_sub = sub_sh.text_frame.paragraphs[0]
+                        if p_sub.runs:
+                            p_sub.runs[0].text = "Taqdimot materiali"
+                            for r in p_sub.runs[1:]:
+                                r.text = ""
+                            p_sub.runs[0].font.size = Pt(18)
+                        else:
+                            p_sub.text = "Taqdimot materiali"
+                            p_sub.font.size = Pt(18)
+                        p_sub.alignment = PP_ALIGN.CENTER
+            else:
                 for sh in s1.shapes:
                     if sh.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER and sh.has_text_frame:
-                        title_sh = sh
+                        sh.text_frame.text = presentation_title
+                        for p in sh.text_frame.paragraphs:
+                            p.alignment = PP_ALIGN.CENTER
+                            p.font.size = Pt(36)
+                            p.font.bold = True
                         break
-
-            if title_sh:
-                title_sh.text_frame.text = presentation_title
-                for p in title_sh.text_frame.paragraphs:
-                    p.font.size = Pt(36)
-                    p.font.bold = True
-
-            if sub_sh:
-                sub_sh.text_frame.text = "Taqdimot materiali"
-                for p in sub_sh.text_frame.paragraphs:
-                    p.font.size = Pt(18)
 
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
