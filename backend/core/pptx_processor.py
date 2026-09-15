@@ -512,60 +512,6 @@ class PPTXProcessor:
             # Ustma-ust tushishlar va gorizontal/vertikal noaniqliklarni avtomatik bartaraf etish
             PPTXProcessor._optimize_slide_layout(slide, prs.slide_width, prs.slide_height)
 
-        # 1-slayd sarlavhasini kafolatlash (agar shablon sarlavhasiz yoki placeholder bo'lsa)
-        if len(prs.slides) > 0 and presentation_title:
-            s1 = prs.slides[0]
-            sw = prs.slide_width
-            
-            # Keng matn qutilarini topish (kengligi kamida slaydning 35% qismini egallagan)
-            candidates = []
-            for sh in s1.shapes:
-                if sh.has_text_frame and (sh.width or 0) >= sw * 0.35:
-                    candidates.append((sh.top or 0, sh))
-            
-            candidates.sort(key=lambda x: x[0])
-            
-            if candidates:
-                # 1-kandidat: Asosiy sarlavha (Title)
-                title_sh = candidates[0][1]
-                if title_sh.text_frame.paragraphs:
-                    p_title = title_sh.text_frame.paragraphs[0]
-                    if p_title.runs:
-                        p_title.runs[0].text = presentation_title
-                        for r in p_title.runs[1:]:
-                            r.text = ""
-                        p_title.runs[0].font.size = Pt(38) if len(presentation_title) > 30 else Pt(44)
-                        p_title.runs[0].font.bold = True
-                    else:
-                        p_title.text = presentation_title
-                        p_title.font.size = Pt(38) if len(presentation_title) > 30 else Pt(44)
-                        p_title.font.bold = True
-                    p_title.alignment = PP_ALIGN.CENTER
-                
-                # 2-kandidat: Sarlavha osti (Subtitle)
-                if len(candidates) >= 2:
-                    sub_sh = candidates[1][1]
-                    if sub_sh.text_frame.paragraphs:
-                        p_sub = sub_sh.text_frame.paragraphs[0]
-                        if p_sub.runs:
-                            p_sub.runs[0].text = "Taqdimot materiali"
-                            for r in p_sub.runs[1:]:
-                                r.text = ""
-                            p_sub.runs[0].font.size = Pt(18)
-                        else:
-                            p_sub.text = "Taqdimot materiali"
-                            p_sub.font.size = Pt(18)
-                        p_sub.alignment = PP_ALIGN.CENTER
-            else:
-                for sh in s1.shapes:
-                    if sh.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER and sh.has_text_frame:
-                        sh.text_frame.text = presentation_title
-                        for p in sh.text_frame.paragraphs:
-                            p.alignment = PP_ALIGN.CENTER
-                            p.font.size = Pt(36)
-                            p.font.bold = True
-                        break
-
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
 
@@ -821,19 +767,7 @@ class PPTXProcessor:
             if first_p.runs and first_p.runs[0].font and first_p.runs[0].font.size:
                 size_pt = first_p.runs[0].font.size.pt
 
-            # A. Gorizontal ustun to'qnashuvini tuzatish (Sarlavha vertikal chiziq/grafika ustiga chiqib qolmasligi)
-            for bar in v_bars:
-                bar_right = bar.left + bar.width
-                # Agar sarlavha chiziqdan oldin yoki ichida boshlanib, o'ng tomonga cho'zilgan bo'lsa
-                if tb.top < sh_h * 0.35 and tb.left < bar_right and (tb.left + tb.width) > bar_right + Inches(1.5):
-                    # O'ng tarafdagi kontent bloklarini topamiz
-                    right_shapes = [s for s in slide.shapes if s.left is not None and s.left >= bar_right and id(s) != id(tb)]
-                    if right_shapes:
-                        min_right = min(s.left for s in right_shapes)
-                        tb.left = min_right
-                        tb.width = max(Inches(3), sw - tb.left - Inches(0.4))
-
-            # B. Vertikal to'qnashuv (yuqoridagi rasm/ikonka bilan ustma-ust tushish)
+            # A. Font alignment and anti-overflow vertical anchor check
             shapes_above = []
             for other in slide.shapes:
                 if id(other) != id(tb) and other.left is not None and other.top is not None:

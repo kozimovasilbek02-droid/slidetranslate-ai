@@ -196,16 +196,21 @@ class ThumbnailGenerator:
                 img = Image.new("RGB", (width, height), color=bg_color)
                 draw = ImageDraw.Draw(img)
 
-                # Shakllarni chizish
-                for shape in slide.shapes:
-                    try:
-                        x = int(shape.left * scale_x)
-                        y = int(shape.top * scale_y)
-                        w = int(shape.width * scale_x)
-                        h = int(shape.height * scale_y)
+                # Fon rasmlari va shakllarni to'g'ri tartibda chizish (Background pictures first)
+                sorted_shapes = sorted(
+                    list(slide.shapes),
+                    key=lambda s: 0 if (hasattr(s, "shape_type") and s.shape_type == MSO_SHAPE_TYPE.PICTURE and (getattr(s, "width", 0) or 0) >= prs_width * 0.4) else 1
+                )
 
-                        # A. Rasmlar (Suratlar, piktogrammalar)
-                        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                for shape in sorted_shapes:
+                    try:
+                        x = int((shape.left or 0) * scale_x)
+                        y = int((shape.top or 0) * scale_y)
+                        w = int((shape.width or 0) * scale_x)
+                        h = int((shape.height or 0) * scale_y)
+
+                        # A. Rasmlar (Suratlar, piktogrammalar, fon rasmlari)
+                        if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                             try:
                                 img_blob = shape.image.blob
                                 with Image.open(io.BytesIO(img_blob)) as pic:
