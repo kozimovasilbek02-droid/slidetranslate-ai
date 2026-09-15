@@ -320,3 +320,8 @@ class ThumbnailGenerator:
                     os.remove(image_path)
                 except Exception:
                     pass
+            if 'temp_zip' in locals() and os.path.exists(temp_zip):
+                try:
+                    os.remove(temp_zip)
+                except Exception:
+                    pass
