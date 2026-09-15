@@ -236,26 +236,29 @@ QAT'IY QOIDALAR:
                                attempt + 1, max_retries, e, wait_sec)
                 time.sleep(wait_sec)
 
-        # Muvaffaqiyatsiz bo'lgan elementlar uchun zaxira (fallback)
+        # Muvaffaqiyatsiz bo'lgan elementlar uchun tezkor zaxira (batch fallback)
+        missing_items = [it for it in items if it["id"] not in result_map or not result_map[it["id"]].strip()]
+        if missing_items:
+            missing_texts = [sanitize_text(it.get("original_text") or it.get("text", "")) for it in missing_items]
+            try:
+                from deep_translator import GoogleTranslator
+                gt = GoogleTranslator(source="auto", target="uz")
+                tr_batch = gt.translate_batch(missing_texts)
+                if tr_batch and len(tr_batch) == len(missing_items):
+                    for it, tr in zip(missing_items, tr_batch):
+                        if tr and tr.strip():
+                            result_map[it["id"]] = sanitize_text(tr)
+            except Exception as pe:
+                logger.warning("Zaxira batch tarjimasida xatolik: %s", pe)
+
         results = []
         for it in items:
             item_id = it["id"]
             orig = sanitize_text(it.get("original_text") or it.get("text", ""))
-            if item_id in result_map and result_map[item_id].strip():
-                results.append({"id": item_id, "translated_text": result_map[item_id]})
-            else:
-                # Zaxira: deep_translator yoki asl matn
-                tr = ""
-                try:
-                    from deep_translator import GoogleTranslator
-                    gt = GoogleTranslator(source="auto", target="uz")
-                    tr = gt.translate(orig) if orig else ""
-                except Exception:
-                    pass
-                val = tr or orig
-                if is_cyrillic:
-                    val = ensure_script(val, "cyrillic")
-                results.append({"id": item_id, "translated_text": sanitize_text(val)})
+            val = result_map.get(item_id) or orig
+            if is_cyrillic:
+                val = ensure_script(val, "cyrillic")
+            results.append({"id": item_id, "translated_text": sanitize_text(val)})
 
         return results
 

@@ -102,7 +102,7 @@ async def validate_gemini_key(api_key: str) -> bool:
         await asyncio.wait_for(
             asyncio.to_thread(
                 client.models.generate_content,
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash-lite",
                 contents="ping",
                 config=types.GenerateContentConfig(max_output_tokens=1)
             ),
