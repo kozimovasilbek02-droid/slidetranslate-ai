@@ -60,8 +60,6 @@ class PPTXProcessor:
         r"http[s]?://\S*allppt\S*",
         r"http[s]?://\S*free-powerpoint-templates\S*",
         r"http[s]?://\S*presentationgo\S*",
-        r"your\s+presentation\s+title\s+here",
-        r"insert\s+(the\s+)?(sub\s*)?title\s+of\s+your\s+presentation",
         r"bepul\s+ppt\s+shablonlar"
     ]
 
@@ -75,7 +73,9 @@ class PPTXProcessor:
         r"visit slidesgo", r"更多精品", r"ppt模板", r"ppt背景", r"51ppt", r"优品ppt", r"ypppt",
         r"minnatdorchilik", r"pexels, pixabay", r"terms of use",
         r"editable icons", r"free icons", r"customizable icons", r"free fonts online",
-        r"fully editable shapes?", r"fully editable icon", r"icon sets?:?\s*[a-z]?"
+        r"fully editable shapes?", r"fully editable icon", r"icon sets?:?\s*[a-z]?",
+        r"png\s+images?", r"place\s+your\s+picture", r"place\s+your\s+image",
+        r"vector\s+icons?", r"icon\s+pack", r"free\s+vector"
     ]
 
     @staticmethod
@@ -154,6 +154,22 @@ class PPTXProcessor:
         sh_h = prs.slide_height
 
         # 1. Taqdimot oxiridagi barcha reklama/resurs slaydlarini to'liq o'chirish
+        # Agar taqdimotda "Thank you" / "E'tiboringiz uchun rahmat" slaydi bo'lsa, undan keyingi barcha shablon ilovalarini o'chirish
+        total_s = len(prs.slides)
+        thank_you_idx = -1
+        for idx in range(total_s - 1, max(0, int(total_s * 0.5)), -1):
+            s = prs.slides[idx]
+            txts = [p.text.strip().lower() for sh in s.shapes if sh.has_text_frame for p in sh.text_frame.paragraphs if p.text.strip()]
+            comb = " ".join(txts)
+            if any(re.search(p, comb) for p in [r"\bthank\s*you\b", r"\be['’`]?tiboringiz\s+uchun\s+rahmat\b", r"\bspasibo\s+za\s+vnimanie\b"]):
+                thank_you_idx = idx
+                break
+
+        if thank_you_idx != -1 and thank_you_idx < len(prs.slides) - 1:
+            for s_idx in range(len(prs.slides) - 1, thank_you_idx, -1):
+                PPTXProcessor._delete_slide(prs, s_idx)
+                removed += 1
+
         slide_count = len(prs.slides)
         for s_idx in range(slide_count - 1, 0, -1):
             slide = prs.slides[s_idx]
@@ -198,8 +214,14 @@ class PPTXProcessor:
                                     pass
 
         # 3. Clean Slide Level Watermarks, Corner Logo Badges and Footer Links
-        for slide in prs.slides:
+        for s_idx, slide in enumerate(prs.slides, 1):
             for sh in list(slide.shapes):
+                # 1-slaydda sarlavha qutilari (Title / Title Placeholder) butunlay o'chirilmasligi kerak!
+                if s_idx == 1 and sh.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER:
+                    txt = sh.text_frame.text.strip().lower() if sh.has_text_frame else ""
+                    if any(p in txt for p in ["title", "free ppt", "click to edit"]):
+                        continue
+
                 # A. Recursive matnli reklama tekshiruvi
                 if PPTXProcessor._is_watermark_recursive(sh):
                     try:
@@ -457,7 +479,8 @@ class PPTXProcessor:
         output_pptx_path: str,
         auto_fit: bool = True,
         target_script: str = "latin",
-        clean_watermarks: bool = True
+        clean_watermarks: bool = True,
+        presentation_title: str = ""
     ) -> str:
         if not os.path.exists(original_pptx_path):
             raise FileNotFoundError(f"Original PPTX topilmadi: {original_pptx_path}")
@@ -477,6 +500,37 @@ class PPTXProcessor:
             )
             # Ustma-ust tushishlar va gorizontal/vertikal noaniqliklarni avtomatik bartaraf etish
             PPTXProcessor._optimize_slide_layout(slide, prs.slide_width, prs.slide_height)
+
+        # 1-slayd sarlavhasini kafolatlash (agar shablon sarlavhasiz yoki placeholder bo'lsa)
+        if len(prs.slides) > 0 and presentation_title:
+            s1 = prs.slides[0]
+            title_sh = None
+            sub_sh = None
+            for sh in s1.shapes:
+                if sh.has_text_frame:
+                    t = sh.text_frame.text.strip().lower()
+                    if any(k in t for k in ["click to edit", "free ppt", "insert the title", "your presentation title", "taqdimot", "fransuzcha", "burger"]):
+                        if not title_sh:
+                            title_sh = sh
+                    elif any(k in t for k in ["subtitle", "quyi sarlavha", "pastki sarlavha", "materiali"]):
+                        sub_sh = sh
+
+            if not title_sh:
+                for sh in s1.shapes:
+                    if sh.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER and sh.has_text_frame:
+                        title_sh = sh
+                        break
+
+            if title_sh:
+                title_sh.text_frame.text = presentation_title
+                for p in title_sh.text_frame.paragraphs:
+                    p.font.size = Pt(36)
+                    p.font.bold = True
+
+            if sub_sh:
+                sub_sh.text_frame.text = "Taqdimot materiali"
+                for p in sub_sh.text_frame.paragraphs:
+                    p.font.size = Pt(18)
 
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
@@ -584,12 +638,29 @@ class PPTXProcessor:
         clean_val = sanitize_control_chars(new_text)
         safe_text = re.sub(r"([A-Za-zА-Яа-яЎўҒғҚқҲҳ])['`’‘ʼʻ]([A-Za-zА-Яа-яЎўҒғҚқҲҳ])", r"\1'\2", clean_val)
 
-        # Lorem Ipsum va soxta lotincha matnlarni avtomatik o'zbekchalashtirish
-        if "lorem ipsum" in safe_text.lower():
-            if len(safe_text) <= 45:
-                safe_text = "Mavzu bo'yicha qisqacha izoh"
+        # Lorem Ipsum va shablonning o'zini o'zi maqtash reklama matnlarini avtomatik o'zbekchalashtirish
+        low_t = safe_text.lower()
+        if "lorem ipsum" in low_t or any(pat in low_t for pat in [
+            "ushbu shablon vaqtingiz",
+            "obro'yingizni tejashiga",
+            "obro‘yingizni tejashiga",
+            "obroyingizni tejashiga",
+            "tinglovchilaringizni hayratda qoldiring",
+            "tomoshabinlarni hayratda qoldiring",
+            "shablonlarimiz yordamida hisobot",
+            "oddiy portfolio",
+            "impress your audience",
+            "this template will",
+            "save your time, money",
+            "easy to change colors, photos",
+            "get a modern powerpoint presentation",
+            "presentation designed",
+            "simple portfolio"
+        ]):
+            if len(safe_text) <= 35:
+                safe_text = "Asosiy tahliliy ko'rsatkichlar"
             else:
-                safe_text = "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar va asosiy tahliliy xulosalar keltiriladi."
+                safe_text = "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar, asosiy ko'rsatkichlar va tahliliy xulosalar keltiriladi."
 
         orig_len = float(len(orig_text))
         new_len = float(len(safe_text))

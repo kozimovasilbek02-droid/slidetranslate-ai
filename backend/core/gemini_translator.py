@@ -179,6 +179,11 @@ QAT'IY QOIDALAR:
    - "Lorem ipsum dolor sit amet..." kabi har qanday soxta lotincha/inglizcha matnlarni hech qachon shundayligicha qoldirmang!
    - Qisqa sarlavhalar uchun: "Mavzu bo'yicha qisqacha izoh" yoki "Taqdimotning qisqacha mazmuni";
    - Uzun matnlar uchun: "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar, asosiy ko'rsatkichlar va tahliliy xulosalar keltiriladi."
+8. SHABLONNING O'ZINI MAQTASH/REKLAMA MATNLARINI (masalan, 'impress your audience', 'add a unique zing', 'easy to change colors', 'this template will save your time and reputation', 'get a modern powerpoint presentation', 'simple portfolio'):
+   - Bunday shablon reklamasini hech qachon 'ushbu shablon vaqtingizni tejaydi' yoki 'oddiy portfolio' deb to'g'ridan-to'g'ri qoldirmang!
+   - O'rniga mavzuga mos professional tahliliy matn bering:
+     * Qisqa sarlavhalar uchun: "Bo'lim mazmuni" yoki "Asosiy ko'rsatkichlar";
+     * Uzun matnlar uchun: "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar, asosiy ko'rsatkichlar va amaliy tahlillar bayon etiladi."
 """
 
         prompt_payload = [
@@ -224,7 +229,7 @@ QAT'IY QOIDALAR:
                 err_str = str(e).lower()
                 if "api_key_invalid" in err_str or "api key not valid" in err_str or ("400" in err_str and "api key" in err_str):
                     logger.error("Gemini API kaliti yaroqsiz: %s", e)
-                    raise ValueError("Gemini API kaliti yaroqsiz yoki Google tomonidan rad etildi! Iltimos, /key buyrug'i orqali to'g'ri kalit kiriting.")
+                    raise ValueError("Gemini API kaliti yaroqsiz yoki Google tomonidan rad etildi! Iltimos, to'g'ri kalit kiriting.")
 
                 wait_sec = 1.5 * (2 ** attempt)
                 logger.warning("Gemini chaqiruvi muvaffaqiyatsiz (urinish %d/%d): %s. Kutish: %.1fs",

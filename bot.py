@@ -609,13 +609,16 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         out_path = os.path.join(EXPORTS_DIR, f"{session_id}_{out_filename}")
 
         # 5. Apply translations and export
+        pres_title = out_filename[:-5] if out_filename.lower().endswith(".pptx") else out_filename
         await asyncio.to_thread(
             PPTXProcessor.apply_translations_and_export,
             upload_path,
             translations_map,
             out_path,
             auto_fit=auto_fit,
-            target_script=target_script
+            target_script=target_script,
+            clean_watermarks=True,
+            presentation_title=pres_title
         )
 
         # 6. Generate 2-3 Slide preview images (With 12s Timeout & Non-blocking Failover)
