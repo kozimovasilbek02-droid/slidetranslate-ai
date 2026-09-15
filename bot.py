@@ -519,6 +519,11 @@ async def handle_presentation_document(msg: Message, bot: Bot):
 
         await run_translation_with_progress()
 
+        try:
+            await status_msg.edit_text("⚙️ <b>Slaydlar shakllantirilmoqda va rasmlar tayyorlanmoqda...</b>", parse_mode="HTML")
+        except Exception:
+            pass
+
         # 4. Generate Clean Title
         clean_title = await asyncio.to_thread(translate_clean_filename, fname, translator, target_script)
         if not clean_title.lower().endswith(".pptx"):
