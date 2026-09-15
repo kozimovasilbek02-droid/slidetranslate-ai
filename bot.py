@@ -621,35 +621,9 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             presentation_title=pres_title
         )
 
-        # 6. Generate 2-3 Slide preview images (With 12s Timeout & Non-blocking Failover)
-        preview_imgs = []
+        # 6. Slayd tayyor bo'lishi bilanoq darhol foydalanuvchiga yuborish
         try:
-            preview_imgs = await asyncio.wait_for(
-                asyncio.to_thread(
-                    ThumbnailGenerator.export_presentation_previews,
-                    out_path,
-                    EXPORTS_DIR,
-                    3
-                ),
-                timeout=12.0
-            )
-        except Exception as pe:
-            logger.warning(f"Preview rasmlarini yaratishda xatolik/taymaut: {pe}")
-
-        thumb_320_path = os.path.join(EXPORTS_DIR, f"{session_id}_thumb320.jpg")
-        if preview_imgs and os.path.exists(preview_imgs[0]):
-            try:
-                from PIL import Image
-                with Image.open(preview_imgs[0]) as im:
-                    im_thumb = im.copy()
-                    im_thumb.thumbnail((320, 320))
-                    im_thumb.save(thumb_320_path, "JPEG", quality=85)
-            except Exception:
-                pass
-
-        # 7. Edit status and send translated document with preview
-        try:
-            await status_msg.edit_text("✅ <b>Tarjima tayyor! Slaydlar yuborilmoqda...</b>", parse_mode="HTML")
+            await status_msg.edit_text("✅ <b>Tarjima tayyor! Fayl yuborilmoqda...</b>", parse_mode="HTML")
         except Exception:
             pass
 
@@ -664,44 +638,33 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         )
 
         input_file = FSInputFile(path=out_path, filename=out_filename)
-        tg_thumb = FSInputFile(path=thumb_320_path) if os.path.exists(thumb_320_path) else None
-
-        # 8. Send multi-slide preview album (Media Group) if 2-3 slides available
-        if preview_imgs and len(preview_imgs) > 1:
-            from aiogram.types import InputMediaPhoto
-            media_group = []
-            for idx, p_path in enumerate(preview_imgs, 1):
-                cap = f"🖼 <b>{idx}-slayd ko'rinishi (Preview)</b>\n📁 <code>{out_filename}</code>" if idx == 1 else f"🖼 <b>{idx}-slayd ko'rinishi</b>"
-                media_group.append(InputMediaPhoto(media=FSInputFile(p_path), caption=cap, parse_mode="HTML"))
-            try:
-                await msg.reply_media_group(media=media_group)
-            except Exception as pe:
-                logger.warning(f"Media group yuborishda xatolik: {pe}")
-        elif preview_imgs and len(preview_imgs) == 1:
-            try:
-                photo_file = FSInputFile(path=preview_imgs[0])
-                await msg.reply_photo(
-                    photo=photo_file,
-                    caption=f"🖼 <b>1-slayd ko'rinishi (Preview):</b>\n📁 <code>{out_filename}</code>",
-                    parse_mode="HTML"
-                )
-            except Exception as pe:
-                logger.warning(f"Photo yuborishda xatolik: {pe}")
-
-        # Send main translated PPTX document safely
-        try:
-            if tg_thumb:
-                await msg.reply_document(document=input_file, thumbnail=tg_thumb, caption=caption, parse_mode="HTML")
-            else:
-                await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
-        except Exception as de:
-            logger.warning(f"Thumbnail bilan yuborishda xatolik, oddiy yuborilmoqda: {de}")
-            await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
+        await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
 
         try:
             await status_msg.delete()
         except Exception:
             pass
+
+        # 7. Ixtiyoriy preview rasmini yuborish (Non-blocking, 5s timeout)
+        try:
+            preview_imgs = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ThumbnailGenerator.export_presentation_previews,
+                    out_path,
+                    EXPORTS_DIR,
+                    1
+                ),
+                timeout=5.0
+            )
+            if preview_imgs and os.path.exists(preview_imgs[0]):
+                photo_file = FSInputFile(path=preview_imgs[0])
+                await msg.reply_photo(
+                    photo=photo_file,
+                    caption=f"🖼 <b>1-slayd ko'rinishi:</b>\n📁 <code>{out_filename}</code>",
+                    parse_mode="HTML"
+                )
+        except Exception as pe:
+            logger.info(f"Preview o'tkazib yuborildi: {pe}")
 
     except Exception as e:
         logger.error(f"Xatolik yuz berdi: {e}", exc_info=True)

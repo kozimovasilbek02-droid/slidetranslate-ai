@@ -490,7 +490,8 @@ class PPTXProcessor:
         auto_fit: bool = True,
         target_script: str = "latin",
         clean_watermarks: bool = True,
-        presentation_title: str = ""
+        presentation_title: str = "",
+        embed_thumbnail: bool = False
     ) -> str:
         if not os.path.exists(original_pptx_path):
             raise FileNotFoundError(f"Original PPTX topilmadi: {original_pptx_path}")
@@ -568,11 +569,12 @@ class PPTXProcessor:
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
 
-        # 1-slayd preview rasmini generatsiya qilish va .pptx arxivi ichiga embed qilish
-        try:
-            ThumbnailGenerator.embed_thumbnail_into_pptx(output_pptx_path)
-        except Exception as e:
-            print(f"[PPTXProcessor] Thumbnail yaratishda ogohlantirish: {e}")
+        # 1-slayd preview rasmini generatsiya qilish va .pptx arxivi ichiga embed qilish (ixtiyoriy)
+        if embed_thumbnail:
+            try:
+                ThumbnailGenerator.embed_thumbnail_into_pptx(output_pptx_path)
+            except Exception as e:
+                print(f"[PPTXProcessor] Thumbnail yaratishda ogohlantirish: {e}")
 
         return output_pptx_path
 
