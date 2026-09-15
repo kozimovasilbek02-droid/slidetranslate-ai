@@ -584,6 +584,13 @@ class PPTXProcessor:
         clean_val = sanitize_control_chars(new_text)
         safe_text = re.sub(r"([A-Za-zА-Яа-яЎўҒғҚқҲҳ])['`’‘ʼʻ]([A-Za-zА-Яа-яЎўҒғҚқҲҳ])", r"\1'\2", clean_val)
 
+        # Lorem Ipsum va soxta lotincha matnlarni avtomatik o'zbekchalashtirish
+        if "lorem ipsum" in safe_text.lower():
+            if len(safe_text) <= 45:
+                safe_text = "Mavzu bo'yicha qisqacha izoh"
+            else:
+                safe_text = "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar va asosiy tahliliy xulosalar keltiriladi."
+
         orig_len = float(len(orig_text))
         new_len = float(len(safe_text))
 

@@ -175,6 +175,10 @@ QAT'IY QOIDALAR:
    - "Real Estate" => "Ko'chmas mulk"
    - "Content Here" / "Contents Title" => "Mundarija"
    - Shablonlardagi "Style", "Layout" kabi sun'iy so'zlarni sarlavhaga qo'shmang, lo'nda va tabiiy nomlang.
+7. LOREM IPSUM VA SHABLON MATNLARINI TO'LIQ O'ZBEKCHALASHTIRING:
+   - "Lorem ipsum dolor sit amet..." kabi har qanday soxta lotincha/inglizcha matnlarni hech qachon shundayligicha qoldirmang!
+   - Qisqa sarlavhalar uchun: "Mavzu bo'yicha qisqacha izoh" yoki "Taqdimotning qisqacha mazmuni";
+   - Uzun matnlar uchun: "Ushbu bo'limda taqdimot mavzusi yuzasidan batafsil ma'lumotlar, asosiy ko'rsatkichlar va tahliliy xulosalar keltiriladi."
 """
 
         prompt_payload = [
