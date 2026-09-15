@@ -84,10 +84,44 @@ def get_user_settings(user_id: int) -> Dict[str, Any]:
         save_user_settings_db(USER_SETTINGS)
     return USER_SETTINGS[uid]
 
+def extract_clean_gemini_key(text: Any) -> Optional[str]:
+    """Extract clean 39-char Gemini API key from text, stripping quotes, brackets, whitespace."""
+    if not text or not isinstance(text, str):
+        return None
+    match = re.search(r"AIzaSy[A-Za-z0-9_-]{33}", text.strip())
+    if match:
+        return match.group(0)
+    return None
+
+async def validate_gemini_key(api_key: str) -> bool:
+    """Quickly check if API key is accepted by Google Gemini API."""
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=api_key)
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.5-flash",
+                contents="ping",
+                config=types.GenerateContentConfig(max_output_tokens=1)
+            ),
+            timeout=7.0
+        )
+        return True
+    except asyncio.TimeoutError:
+        return True
+    except Exception as e:
+        err = str(e).lower()
+        if "api_key_invalid" in err or "api key not valid" in err or ("400" in err and "api key" in err):
+            return False
+        return True
+
 def set_user_api_key(user_id: int, key: str):
     uid = str(user_id)
     st = get_user_settings(user_id)
-    st["api_key"] = key.strip()
+    clean_k = extract_clean_gemini_key(key) or key.strip()
+    st["api_key"] = clean_k
     USER_SETTINGS[uid] = st
     save_user_settings_db(USER_SETTINGS)
 
@@ -213,21 +247,35 @@ async def cmd_start(msg: Message):
 async def cmd_set_key(msg: Message):
     parts = msg.text.split(maxsplit=1)
     if len(parts) > 1:
-        new_key = parts[1].strip()
-        if not new_key.startswith("AIzaSy"):
+        raw_key = parts[1].strip()
+        clean_key = extract_clean_gemini_key(raw_key)
+        if not clean_key:
             await msg.reply(
                 f"❌ <b>Noto'g'ri Gemini API kaliti!</b>\n\n"
-                f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi.\n"
-                f"Siz kiritgan kalit (<code>{new_key[:12]}...</code>) noto'g'ri yoki boshqa tizim kaliti.\n\n"
+                f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi (39 ta belgi).\n"
+                f"Iltimos, kalitni to'g'ri nusxalaganingizni tekshiring (burchakli qavslar [ ] yoki qo'shtirnoqlarsiz).\n\n"
                 f"👉 <b>Bepul Gemini API kaliti olish (1 daqiqa):</b>\n"
                 f"<a href='https://aistudio.google.com/app/apikey'>https://aistudio.google.com/app/apikey</a>",
                 parse_mode="HTML",
                 disable_web_page_preview=True
             )
             return
-        set_user_api_key(msg.from_user.id, new_key)
-        await msg.reply(
-            "✅ <b>Gemini API kalitingiz muvaffaqiyatli saqlandi!</b>\n"
+
+        chk_msg = await msg.reply("⏳ <b>Gemini API kaliti tekshirilmoqda...</b>", parse_mode="HTML")
+        is_valid = await validate_gemini_key(clean_key)
+        if not is_valid:
+            await chk_msg.edit_text(
+                "❌ <b>Google ushbu API kalitni rad etdi (yaroqsiz)!</b>\n\n"
+                "Iltimos, kalit to'g'ri va faolligini tekshirib, qaytadan yuboring:\n"
+                "<a href='https://aistudio.google.com/app/apikey'>Google AI Studio dan yangi kalit olish</a>",
+                parse_mode="HTML",
+                disable_web_page_preview=True
+            )
+            return
+
+        set_user_api_key(msg.from_user.id, clean_key)
+        await chk_msg.edit_text(
+            "✅ <b>Gemini API kalitingiz tekshirildi va muvaffaqiyatli saqlandi!</b>\n"
             "Endi bemalol .pptx taqdimot fayllaringizni tarjima qilish uchun yuborishingiz mumkin.",
             parse_mode="HTML"
         )
@@ -295,19 +343,32 @@ async def cmd_help(msg: Message):
 @dp.message(F.text & ~F.text.startswith("/"))
 async def handle_text_key_input(msg: Message):
     text = msg.text.strip()
-    if text.startswith("AIzaSy") and len(text) >= 30:
-        set_user_api_key(msg.from_user.id, text)
-        await msg.reply(
-            "🎉 <b>Google Gemini API kalitingiz muvaffaqiyatli saqlandi!</b>\n\n"
+    clean_key = extract_clean_gemini_key(text)
+    if clean_key:
+        chk_msg = await msg.reply("⏳ <b>Gemini API kaliti tekshirilmoqda...</b>", parse_mode="HTML")
+        is_valid = await validate_gemini_key(clean_key)
+        if not is_valid:
+            await chk_msg.edit_text(
+                "❌ <b>Google ushbu API kalitni rad etdi (yaroqsiz)!</b>\n\n"
+                "Iltimos, kalit to'g'ri nusxalanganini tekshirib, qaytadan yuboring:\n"
+                "<a href='https://aistudio.google.com/app/apikey'>Google AI Studio dan yangi kalit olish</a>",
+                parse_mode="HTML",
+                disable_web_page_preview=True
+            )
+            return
+
+        set_user_api_key(msg.from_user.id, clean_key)
+        await chk_msg.edit_text(
+            "🎉 <b>Google Gemini API kalitingiz muvaffaqiyatli tekshirildi va saqlandi!</b>\n\n"
             "Endi botdan cheklovlarsiz foydalanishingiz mumkin. Menga istalgan <b>.pptx</b> taqdimot faylini yuboring!",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(msg.from_user.id)
         )
-    elif len(text) >= 25 and not text.startswith("AIzaSy"):
+    elif len(text) >= 25 and not clean_key and ("aiza" in text.lower() or "gemini" in text.lower()):
         await msg.reply(
             f"❌ <b>Noto'g'ri Gemini API kaliti!</b>\n\n"
-            f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi.\n"
-            f"Siz kiritgan text (<code>{text[:14]}...</code>) noto'g'ri yoki boshqa tizim kaliti.\n\n"
+            f"Google Gemini API kalitlari har doim <code>AIzaSy...</code> bilan boshlanadi (39 ta belgi).\n"
+            f"Siz kiritgan matnda xatolik bor.\n\n"
             f"👉 <b>Bepul Gemini API kaliti olish (1 daqiqa):</b>\n"
             f"<a href='https://aistudio.google.com/app/apikey'>https://aistudio.google.com/app/apikey</a>",
             parse_mode="HTML",
@@ -434,7 +495,10 @@ async def handle_presentation_document(msg: Message, bot: Bot):
 
     user_id = msg.from_user.id
     st = get_user_settings(user_id)
-    user_key = st.get("api_key")
+    raw_user_key = st.get("api_key")
+    user_key = extract_clean_gemini_key(raw_user_key) if raw_user_key else None
+    if user_key and raw_user_key != user_key:
+        set_user_api_key(user_id, user_key)
 
     if not user_key:
         await msg.reply(
@@ -638,10 +702,15 @@ async def handle_presentation_document(msg: Message, bot: Bot):
 
     except Exception as e:
         logger.error(f"Xatolik yuz berdi: {e}", exc_info=True)
+        import html
+        clean_err = html.escape(str(e))
         try:
-            await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
+            await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b>\n<code>{clean_err}</code>", parse_mode="HTML")
         except Exception:
-            pass
+            try:
+                await msg.reply(f"❌ Xatolik yuz berdi:\n{str(e)}")
+            except Exception:
+                pass
 
 # Photo / Screenshot Handler
 @dp.message(F.photo)

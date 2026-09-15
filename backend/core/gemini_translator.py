@@ -221,6 +221,11 @@ QAT'IY QOIDALAR:
                     break
             except Exception as e:
                 last_exception = e
+                err_str = str(e).lower()
+                if "api_key_invalid" in err_str or "api key not valid" in err_str or ("400" in err_str and "api key" in err_str):
+                    logger.error("Gemini API kaliti yaroqsiz: %s", e)
+                    raise ValueError("Gemini API kaliti yaroqsiz yoki Google tomonidan rad etildi! Iltimos, /key buyrug'i orqali to'g'ri kalit kiriting.")
+
                 wait_sec = 1.5 * (2 ** attempt)
                 logger.warning("Gemini chaqiruvi muvaffaqiyatsiz (urinish %d/%d): %s. Kutish: %.1fs",
                                attempt + 1, max_retries, e, wait_sec)

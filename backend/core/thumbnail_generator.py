@@ -61,11 +61,7 @@ class ThumbnailGenerator:
         if pil_images:
             return pil_images
 
-        # 3. Zaxira: Soddalashtirilgan chiroyli muqova
-        fallback_path = os.path.join(output_dir, f"{base_name}_slide_1.jpg")
-        if cls.export_slide_preview(abs_pptx, fallback_path, width, height):
-            return [fallback_path]
-
+        # 3. Agar LibreOffice yoki PIL render yaratilmasa, xavfsiz bo'sh ro'yxat qaytarish (rekursiyasiz)
         return []
 
     @classmethod
