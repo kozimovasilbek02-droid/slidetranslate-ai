@@ -1,10 +1,38 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import io
+import zipfile
 from typing import Dict, Any, List, Optional
 from pptx import Presentation
 from pptx.util import Pt, Inches
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.enum.text import MSO_ANCHOR
+
+def safe_load_presentation(pptx_path: str) -> Presentation:
+    """
+    Safely loads a Presentation, auto-patching template.main+xml content types
+    (common in PresentationGO, SlidesMania, or POTX templates).
+    """
+    try:
+        return Presentation(pptx_path)
+    except ValueError as e:
+        if "template.main+xml" in str(e):
+            with zipfile.ZipFile(pptx_path, "r") as zin:
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+                    for item in zin.infolist():
+                        data = zin.read(item.filename)
+                        if item.filename == "[Content_Types].xml":
+                            data = data.replace(
+                                b"application/vnd.openxmlformats-officedocument.presentationml.template.main+xml",
+                                b"application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
+                            )
+                        zout.writestr(item, data)
+                buf.seek(0)
+            return Presentation(buf)
+        raise
+
 
 from backend.core.transliteration import ensure_script
 from backend.core.font_manager import font_manager
@@ -24,7 +52,17 @@ class PPTXProcessor:
         r"slidesgo", r"poweredtemplate", r"slidemodel", r"designed with",
         r"free templates?", r"questions or need help", r"visit our faq",
         r"更多精品", r"ppt模板", r"ppt背景", r"by:\s*", r"\.com",
-        r"51ppt", r"优品ppt", r"free-powerpoint-templates-design", r"freeppt"
+        r"51ppt", r"优品ppt", r"free-powerpoint-templates-design", r"freeppt",
+        r"\ballppt(\.com)?\b", r"free\s*ppt(\s*templates?)?",
+        r"free\s*powerpoint\s*templates?",
+        r"clean\s+text\s+slide\s+for\s+your\s+presentation",
+        r"allppt\s+(layout|tartibi)",
+        r"http[s]?://\S*allppt\S*",
+        r"http[s]?://\S*free-powerpoint-templates\S*",
+        r"http[s]?://\S*presentationgo\S*",
+        r"your\s+presentation\s+title\s+here",
+        r"insert\s+(the\s+)?(sub\s*)?title\s+of\s+your\s+presentation",
+        r"bepul\s+ppt\s+shablonlar"
     ]
 
     AD_SLIDE_PATTERNS = [
@@ -36,7 +74,8 @@ class PPTXProcessor:
         r"ijodingizga zafarlar", r"credits\s*:", r"visit slidescarnival",
         r"visit slidesgo", r"更多精品", r"ppt模板", r"ppt背景", r"51ppt", r"优品ppt", r"ypppt",
         r"minnatdorchilik", r"pexels, pixabay", r"terms of use",
-        r"editable icons", r"free icons", r"customizable icons", r"free fonts online"
+        r"editable icons", r"free icons", r"customizable icons", r"free fonts online",
+        r"fully editable shapes?", r"fully editable icon", r"icon sets?:?\s*[a-z]?"
     ]
 
     @staticmethod
@@ -73,11 +112,15 @@ class PPTXProcessor:
         return False
 
     @staticmethod
-    def _is_ad_slide(slide, slide_index: int = 2) -> bool:
-        """Taqdimot oxiridagi SlidesCarnival/Slidesgo/Freepik reklama va minnatdorchilik slaydlarini aniqlash."""
-        # Birinchi slayd (muqova/titul) hech qachon reklama slaydi sifatida o'chirilmaydi
-        if slide_index <= 1:
+    def _is_ad_slide(slide, slide_index: int = 2, total_slides: int = 10) -> bool:
+        """Taqdimot oxiridagi SlidesCarnival/Slidesgo/Freepik reklama va resurs slaydlarini aniqlash."""
+        # Birinchi yoki ikkinchi slayd (muqova/reja) hech qachon reklama slaydi sifatida o'chirilmaydi
+        if slide_index <= 2:
             return False
+        # Kontent slaydlarini tasodifiy o'chirib yubormaslik uchun faqat oxirgi qismdagi (65%+) slaydlar tekshiriladi
+        if total_slides > 5 and slide_index < total_slides * 0.65:
+            return False
+
         texts = []
         for sh in slide.shapes:
             if sh.has_text_frame:
@@ -107,12 +150,14 @@ class PPTXProcessor:
     @staticmethod
     def clean_presentation_watermarks(prs: Presentation) -> int:
         removed = 0
-        
-        # 1. Taqdimot oxiridagi barcha reklama/minnatdorchilik slaydlarini to'liq o'chirish (birinchi slayd o'chirilmaydi)
+        sw = prs.slide_width
+        sh_h = prs.slide_height
+
+        # 1. Taqdimot oxiridagi barcha reklama/resurs slaydlarini to'liq o'chirish
         slide_count = len(prs.slides)
         for s_idx in range(slide_count - 1, 0, -1):
             slide = prs.slides[s_idx]
-            if PPTXProcessor._is_ad_slide(slide, slide_index=s_idx + 1):
+            if PPTXProcessor._is_ad_slide(slide, slide_index=s_idx + 1, total_slides=slide_count):
                 PPTXProcessor._delete_slide(prs, s_idx)
                 removed += 1
 
@@ -127,7 +172,7 @@ class PPTXProcessor:
                         pass
                 elif sh.shape_type != MSO_SHAPE_TYPE.PLACEHOLDER:
                     if sh.left is not None and sh.top is not None:
-                        if (sh.left > 8000000 and sh.top < 500000) or sh.top > 6000000 or (sh.left < 500000 and sh.top < 500000):
+                        if (sh.left > sw * 0.80 and sh.top < sh_h * 0.15) or sh.top > sh_h * 0.85:
                             try:
                                 sh._element.getparent().remove(sh._element)
                                 removed += 1
@@ -144,22 +189,46 @@ class PPTXProcessor:
                             pass
                     elif sh.shape_type != MSO_SHAPE_TYPE.PLACEHOLDER:
                         if sh.left is not None and sh.top is not None:
-                            if (sh.left > 8000000 and sh.top < 500000) or sh.top > 6000000 or (sh.left < 500000 and sh.top < 500000):
+                            if (sh.left > sw * 0.80 and sh.top < sh_h * 0.15) or sh.top > sh_h * 0.85:
                                 try:
                                     sh._element.getparent().remove(sh._element)
                                     removed += 1
+                                    pass
                                 except Exception:
                                     pass
 
-        # 3. Clean Slide Level Watermarks
+        # 3. Clean Slide Level Watermarks, Corner Logo Badges and Footer Links
         for slide in prs.slides:
             for sh in list(slide.shapes):
+                # A. Recursive matnli reklama tekshiruvi
                 if PPTXProcessor._is_watermark_recursive(sh):
                     try:
                         sh._element.getparent().remove(sh._element)
                         removed += 1
+                        continue
                     except Exception:
                         pass
+
+                # B. Burchaklardagi logo nishonlari (masalan, yuqori o'ngdagi ALLPPT.com pilli) va footer havolalari
+                try:
+                    l, t, w, h = sh.left, sh.top, sh.width, sh.height
+                    if l is not None and t is not None and w is not None and h is not None and sw and sh_h:
+                        # Yuqori o'ng burchakdagi reklama nishoni (L > 80%, T < 15%, W < 25%, H < 12%)
+                        if l > sw * 0.80 and t < sh_h * 0.15 and w < sw * 0.25 and h < sh_h * 0.12:
+                            txt = sh.text_frame.text.strip() if sh.has_text_frame else ""
+                            if PPTXProcessor._is_watermark_text(txt) or len(txt) < 15:
+                                sh._element.getparent().remove(sh._element)
+                                removed += 1
+                                continue
+                        # Pastki footer watermark / link (T > 90%, H < 10%)
+                        if t > sh_h * 0.90 and h < sh_h * 0.10:
+                            txt = sh.text_frame.text.strip().lower() if sh.has_text_frame else ""
+                            if any(p in txt for p in ["http", "www", "free", "allppt", "template", "design", ".com"]):
+                                sh._element.getparent().remove(sh._element)
+                                removed += 1
+                                continue
+                except Exception:
+                    pass
 
         return removed
 
@@ -210,7 +279,7 @@ class PPTXProcessor:
     def extract_presentation_data(pptx_path: str) -> Dict[str, Any]:
         if not os.path.exists(pptx_path):
             raise FileNotFoundError(f"PPTX topilmadi: {pptx_path}")
-        prs = Presentation(pptx_path)
+        prs = safe_load_presentation(pptx_path)
         slides_data = []
         total_items_count = 0
         slide_width = prs.slide_width
@@ -393,7 +462,7 @@ class PPTXProcessor:
         if not os.path.exists(original_pptx_path):
             raise FileNotFoundError(f"Original PPTX topilmadi: {original_pptx_path}")
 
-        prs = Presentation(original_pptx_path)
+        prs = safe_load_presentation(original_pptx_path)
 
         if clean_watermarks:
             PPTXProcessor.clean_presentation_watermarks(prs)
@@ -406,6 +475,8 @@ class PPTXProcessor:
                 auto_fit=auto_fit,
                 target_script=target_script
             )
+            # Ustma-ust tushishlar va gorizontal/vertikal noaniqliklarni avtomatik bartaraf etish
+            PPTXProcessor._optimize_slide_layout(slide, prs.slide_width, prs.slide_height)
 
         os.makedirs(os.path.dirname(os.path.abspath(output_pptx_path)), exist_ok=True)
         prs.save(output_pptx_path)
@@ -457,6 +528,7 @@ class PPTXProcessor:
             if shape.has_text_frame:
                 tf = shape.text_frame
                 tf.word_wrap = True
+                tf.vertical_anchor = MSO_ANCHOR.TOP  # Ustma-ust tushishning oldini oladi (matn yuqoriga emas, pastga kengayadi)
                 tf.margin_left = Inches(0.01)
                 tf.margin_right = Inches(0.01)
                 tf.margin_top = Inches(0.01)
@@ -553,7 +625,13 @@ class PPTXProcessor:
                 
                 # C. Katta va uzun sarlavhalar (masalan: Kompaniyamizning so'nggi SWOT tahlili hisoboti)
                 elif current_pt >= 24.0:
-                    if new_len >= 35:
+                    if "\n" not in orig_text and box_width_pt:
+                        # Original matn 1 qator bo'lsa, tarjima ham 1 qatordan oshmasligi shart (ustma-ust tushishning oldini oladi)
+                        max_1line_pt = (box_width_pt - 25) / (max(1, new_len) * 0.65)
+                        new_pt = min(current_pt, max(16.0, max_1line_pt))
+                        if new_len > orig_len:
+                            new_pt = min(new_pt, max(16.0, current_pt * (orig_len / new_len)))
+                    elif new_len >= 35:
                         new_pt = max(14.0, current_pt * 0.72)
                     elif new_len >= 20:
                         new_pt = max(16.0, current_pt * 0.82)
@@ -588,3 +666,83 @@ class PPTXProcessor:
         if len(paragraph.runs) > 1:
             for r in paragraph.runs[1:]:
                 r.text = ""
+
+    @staticmethod
+    def _optimize_slide_layout(slide, slide_width, slide_height):
+        """
+        Slayd ichidagi matn va shakllarning ustma-ust tushishi (overlap)
+        hamda gorizontal/vertikal noaniqliklarni intellektual to'g'irlaydi.
+        """
+        sw = slide_width
+        sh_h = slide_height
+
+        # 1. Vertikal dekorativ shakllar / ustunlarni aniqlash (masalan, chapdagi vertikal ajratuvchi chiziq)
+        v_bars = []
+        for sh in slide.shapes:
+            try:
+                if sh.height >= sh_h * 0.65 and sh.width <= sw * 0.25 and sh.shape_type in [MSO_SHAPE_TYPE.AUTO_SHAPE, MSO_SHAPE_TYPE.FREEFORM]:
+                    v_bars.append(sh)
+            except Exception:
+                pass
+
+        all_tbs = [sh for sh in slide.shapes if sh.has_text_frame]
+
+        for tb in all_tbs:
+            tf = tb.text_frame
+            txt = tf.text.strip()
+            if not txt:
+                continue
+
+            # Shablonning qo'shimcha sun'iy so'zlarini tozalash (masalan: "Kun tartibi uslubi" -> "Kun tartibi")
+            cleaned_txt = re.sub(r"\b(uslubi|stili)\b", "", txt, flags=re.IGNORECASE).strip()
+            if cleaned_txt and cleaned_txt != txt and len(cleaned_txt) >= 3:
+                try:
+                    p0 = tf.paragraphs[0]
+                    p0.text = cleaned_txt
+                    txt = cleaned_txt
+                except Exception:
+                    pass
+
+            first_p = tf.paragraphs[0]
+            size_pt = 16.0
+            if first_p.runs and first_p.runs[0].font and first_p.runs[0].font.size:
+                size_pt = first_p.runs[0].font.size.pt
+
+            # A. Gorizontal ustun to'qnashuvini tuzatish (Sarlavha vertikal chiziq/grafika ustiga chiqib qolmasligi)
+            for bar in v_bars:
+                bar_right = bar.left + bar.width
+                # Agar sarlavha chiziqdan oldin yoki ichida boshlanib, o'ng tomonga cho'zilgan bo'lsa
+                if tb.top < sh_h * 0.35 and tb.left < bar_right and (tb.left + tb.width) > bar_right + Inches(1.5):
+                    # O'ng tarafdagi kontent bloklarini topamiz
+                    right_shapes = [s for s in slide.shapes if s.left is not None and s.left >= bar_right and id(s) != id(tb)]
+                    if right_shapes:
+                        min_right = min(s.left for s in right_shapes)
+                        tb.left = min_right
+                        tb.width = max(Inches(3), sw - tb.left - Inches(0.4))
+
+            # B. Vertikal to'qnashuv (yuqoridagi rasm/ikonka bilan ustma-ust tushish)
+            shapes_above = []
+            for other in slide.shapes:
+                if id(other) != id(tb) and other.left is not None and other.top is not None:
+                    # Gorizontal kesishish
+                    if not (other.left + other.width <= tb.left or other.left >= tb.left + tb.width):
+                        other_bottom = other.top + other.height
+                        if other_bottom <= tb.top + Inches(0.2) and (tb.top - other_bottom) < Inches(0.8):
+                            shapes_above.append(other)
+
+            if shapes_above:
+                tf.vertical_anchor = MSO_ANCHOR.TOP
+                if "\n" not in txt and len(txt) <= 25 and size_pt >= 24.0:
+                    box_w_pt = tb.width.pt if tb.width else 400
+                    max_pt = (box_w_pt - 25) / (len(txt) * 0.65)
+                    target_pt = min(size_pt, max(16.0, max_pt))
+                    if target_pt < size_pt:
+                        first_p.runs[0].font.size = Pt(round(target_pt, 1))
+
+        # 3. Qayta qolgan reklama matnli shakllarini butunlay o'chirish
+        for sh in list(slide.shapes):
+            if sh.has_text_frame and PPTXProcessor._is_watermark_text(sh.text_frame.text):
+                try:
+                    sh._element.getparent().remove(sh._element)
+                except Exception:
+                    pass

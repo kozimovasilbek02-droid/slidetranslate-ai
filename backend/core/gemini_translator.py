@@ -167,6 +167,14 @@ QAT'IY QOIDALAR:
    - Boshqaruv belgilarini (_x000B_, \\v, \\r) va ortiqcha probellarni tozalang.
 5. JAVOB FORMATI:
    - Kiruvchi JSON massividagi har bir element uchun 'id' va 'translated' kalitlari bilan JSON massiv qaytaring.
+6. SHABLON SARLAVHALARINI TO'G'RI TARJIMA QILISH:
+   - "Agenda Style" => "Kun tartibi" ("uslubi" so'zini qo'shmang)
+   - "Our Team Style" / "Team Style" => "Bizning jamoa"
+   - "Infographic Style" => "Infografika"
+   - "Portfolio Style" => "Portfolio"
+   - "Real Estate" => "Ko'chmas mulk"
+   - "Content Here" / "Contents Title" => "Mundarija"
+   - Shablonlardagi "Style", "Layout" kabi sun'iy so'zlarni sarlavhaga qo'shmang, lo'nda va tabiiy nomlang.
 """
 
         prompt_payload = [
