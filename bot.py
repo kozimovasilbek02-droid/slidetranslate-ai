@@ -524,12 +524,23 @@ async def handle_presentation_document(msg: Message, bot: Bot):
         except Exception:
             pass
 
-        # 4. Generate Clean Title
-        clean_title = await asyncio.to_thread(translate_clean_filename, fname, translator, target_script)
-        if not clean_title.lower().endswith(".pptx"):
-            out_filename = f"{clean_title}.pptx"
-        else:
-            out_filename = clean_title
+        # 4. Generate Clean Title (With 5s Timeout & Safe Fallback)
+        out_filename = "Taqdimot_Tarjima.pptx"
+        try:
+            clean_title = await asyncio.wait_for(
+                asyncio.to_thread(translate_clean_filename, fname, translator, target_script),
+                timeout=5.0
+            )
+            if clean_title and clean_title.strip():
+                if not clean_title.lower().endswith(".pptx"):
+                    out_filename = f"{clean_title.strip()}.pptx"
+                else:
+                    out_filename = clean_title.strip()
+        except Exception as te:
+            logger.warning(f"Sarlavha tarjimasida taymaut/xatolik: {te}")
+            base_fname, _ = os.path.splitext(fname)
+            base_fname = re.sub(r'[/\\:*?"<>|_]', ' ', base_fname).strip()
+            out_filename = f"{base_fname}_Tarjima.pptx" if base_fname else "Taqdimot_Tarjima.pptx"
 
         out_path = os.path.join(EXPORTS_DIR, f"{session_id}_{out_filename}")
 
@@ -543,13 +554,20 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             target_script=target_script
         )
 
-        # 6. Generate 2-3 Slide preview images and thumbnail for Telegram
-        preview_imgs = await asyncio.to_thread(
-            ThumbnailGenerator.export_presentation_previews,
-            out_path,
-            EXPORTS_DIR,
-            3
-        )
+        # 6. Generate 2-3 Slide preview images (With 12s Timeout & Non-blocking Failover)
+        preview_imgs = []
+        try:
+            preview_imgs = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ThumbnailGenerator.export_presentation_previews,
+                    out_path,
+                    EXPORTS_DIR,
+                    3
+                ),
+                timeout=12.0
+            )
+        except Exception as pe:
+            logger.warning(f"Preview rasmlarini yaratishda xatolik/taymaut: {pe}")
 
         thumb_320_path = os.path.join(EXPORTS_DIR, f"{session_id}_thumb320.jpg")
         if preview_imgs and os.path.exists(preview_imgs[0]):
@@ -563,7 +581,10 @@ async def handle_presentation_document(msg: Message, bot: Bot):
                 pass
 
         # 7. Edit status and send translated document with preview
-        await status_msg.edit_text("✅ <b>Tarjima tayyor! Slaydlar yuborilmoqda...</b>", parse_mode="HTML")
+        try:
+            await status_msg.edit_text("✅ <b>Tarjima tayyor! Slaydlar yuborilmoqda...</b>", parse_mode="HTML")
+        except Exception:
+            pass
 
         caption = (
             f"🎉 <b>Taqdimotingiz muvaffaqiyatli tarjima qilindi!</b>\n\n"
@@ -600,16 +621,27 @@ async def handle_presentation_document(msg: Message, bot: Bot):
             except Exception as pe:
                 logger.warning(f"Photo yuborishda xatolik: {pe}")
 
-        if tg_thumb:
-            await msg.reply_document(document=input_file, thumbnail=tg_thumb, caption=caption, parse_mode="HTML")
-        else:
+        # Send main translated PPTX document safely
+        try:
+            if tg_thumb:
+                await msg.reply_document(document=input_file, thumbnail=tg_thumb, caption=caption, parse_mode="HTML")
+            else:
+                await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
+        except Exception as de:
+            logger.warning(f"Thumbnail bilan yuborishda xatolik, oddiy yuborilmoqda: {de}")
             await msg.reply_document(document=input_file, caption=caption, parse_mode="HTML")
-            
-        await status_msg.delete()
+
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
 
     except Exception as e:
         logger.error(f"Xatolik yuz berdi: {e}", exc_info=True)
-        await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
+        try:
+            await status_msg.edit_text(f"❌ <b>Xatolik yuz berdi:</b> {str(e)}", parse_mode="HTML")
+        except Exception:
+            pass
 
 # Photo / Screenshot Handler
 @dp.message(F.photo)
